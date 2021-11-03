@@ -4,6 +4,10 @@
 
 pub mod jni_api;
 
+pub mod datatype;
+pub mod expression;
+pub mod functions;
+
 #[cfg(test)]
 mod tests {
     #[test]
