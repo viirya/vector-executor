@@ -32,7 +32,9 @@ pub enum Operator {
     Projection(Vec<Expr>, Box<Operator>),
 }
 
-trait Execution {
+/// Trait for operator execution
+pub trait Execution {
+    /// Execute operator
     fn execute(&self) -> Result<Vec<ColumnarValue>, ExecutionError>;
 }
 

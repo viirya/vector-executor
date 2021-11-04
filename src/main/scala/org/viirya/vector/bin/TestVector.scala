@@ -19,5 +19,10 @@ object TestVector {
     val vectorAddress = vector.valuesNativeAddress()
     val returned = lib.passOffHeapVector(vectorAddress, 10)
     println(s"returned: $returned")
+
+    // Project(add(vector, val))
+    val added = lib.projectOnVector(vectorAddress, 10, 5)
+    // 456 + 5 = 461
+    println(s"returned vector[0]: $added")
   }
 }
