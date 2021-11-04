@@ -135,17 +135,37 @@ mod tests {
                 Expr::Literal(ColumnarValue::Array(ArrayValues::ArrowArray(Arc::new(array3)))),
             ],
         };
-        let exprs = vec![add1];
+
+        let add2 = Expr::ScalarFunction {
+            func: BuiltinScalarFunction::Add,
+            args: vec![
+                Expr::BoundReference(1),
+                Expr::Literal(ColumnarValue::Scalar(LiteralValue::Int32(2))),
+            ],
+        };
+
+        let exprs = vec![add1, add2];
         let projection = Operator::Projection(exprs, Box::new(scan));
         let results = projection.execute().unwrap();
 
-        assert_eq!(results.len(), 1);
+        assert_eq!(results.len(), 2);
 
+        // vec![1, 2, 3, 4, 5] + 1
         match results.get(0).unwrap() {
             ColumnarValue::Array(ArrayValues::ArrowArray(array_ref)) => {
                 assert_eq!(array_ref.len(), 5);
                 assert_eq!(array_ref.data().data_type().clone(), Int32);
                 assert_eq!(array_ref.as_ref(), &Int32Array::from(vec![2, 3, 4, 5, 6]));
+            },
+            _ => assert!(false, "Add expression should return ArrowArray"),
+        }
+
+        // vec![6, 7, 8, 9, 10] + 2
+        match results.get(1).unwrap() {
+            ColumnarValue::Array(ArrayValues::ArrowArray(array_ref)) => {
+                assert_eq!(array_ref.len(), 5);
+                assert_eq!(array_ref.data().data_type().clone(), Int32);
+                assert_eq!(array_ref.as_ref(), &Int32Array::from(vec![8, 9, 10, 11, 12]));
             },
             _ => assert!(false, "Add expression should return ArrowArray"),
         }
