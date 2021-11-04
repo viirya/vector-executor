@@ -7,6 +7,7 @@ pub mod jni_api;
 pub mod datatype;
 pub mod expression;
 pub mod functions;
+pub mod operators;
 
 #[cfg(test)]
 mod tests {
