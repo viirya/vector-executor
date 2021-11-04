@@ -66,6 +66,37 @@ pub extern "system" fn Java_org_viirya_vector_native_VectorLib_projectOnVector(
     results[0].get_int(0).unwrap() as i32
 }
 
+#[no_mangle]
+/// Test JNI API. Accept the addresses of two OffHeapColumnVectors of Spark, then perform vectorized
+/// add on the two vectors by a projection operator.
+pub extern "system" fn Java_org_viirya_vector_native_VectorLib_projectOnTwoVectors(
+    _env: JNIEnv,
+    _class: JClass,
+    address1: jlong,
+    address2: jlong,
+    num_row: jint,
+) -> jint {
+
+    let column_vector1 = ColumnarValue::Array(ArrayValues::IntColumnVector(address1, num_row as u32));
+    let column_vector2 = ColumnarValue::Array(ArrayValues::IntColumnVector(address2, num_row as u32));
+
+    let scan = Operator::Scan(vec![column_vector1, column_vector2]);
+
+    let add = Expr::ScalarFunction {
+        func: BuiltinScalarFunction::Add,
+        args: vec![
+            Expr::BoundReference(0),
+            Expr::BoundReference(1),
+        ],
+    };
+
+    let exprs = vec![add];
+    let projection = Operator::Projection(exprs, Box::new(scan));
+    let results = projection.execute().unwrap();
+
+    results[0].get_int(0).unwrap() as i32
+}
+
 #[cfg(test)]
 mod tests {
     #[test]
