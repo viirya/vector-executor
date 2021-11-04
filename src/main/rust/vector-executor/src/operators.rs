@@ -68,6 +68,14 @@ fn execute_expr(expr: &Expr, args: &[ColumnarValue]) -> Result<ColumnarValue, Ex
     match expr {
         Expr::Literal(lit) => Ok(lit.clone()),
 
+        Expr::BoundReference(column_index) => {
+            if column_index < &args.len() {
+                Ok(args[column_index.clone()].clone())
+            } else {
+                Err(ExpressionError::GeneralError(format!("column index {} is out of range.", column_index)))
+            }
+        },
+
         Expr::ScalarFunction {
             func: expr_func,
             args: expr_args,
