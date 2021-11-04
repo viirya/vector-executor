@@ -29,15 +29,6 @@ pub extern "system" fn Java_org_viirya_vector_native_VectorLib_passOffHeapVector
     address: jlong,
     _num_row: jint,
 ) -> jint {
-    /*
-    let raw_address: *mut [i32] = address as *mut [i32];
-
-    let values = unsafe {
-        Box::<[i32]>::from_raw(raw_address)
-    };
-    values[0].count_zeros() as i64
-     */
-
     let output = unsafe { *(address as *mut i32) };
     output
 }
