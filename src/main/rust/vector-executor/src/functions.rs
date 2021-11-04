@@ -29,10 +29,12 @@ pub fn physical_add(args: &[ColumnarValue]) -> Result<ColumnarValue, ExpressionE
                 ));
             }
         }
+        (ColumnarValue::Array(array), ColumnarValue::Scalar(_)) => array.len().try_into().unwrap(),
+        (ColumnarValue::Scalar(_), ColumnarValue::Array(array)) => array.len().try_into().unwrap(),
         #[allow(unreachable_patterns)]
         _ => {
             return Err(ExpressionError::GeneralError(
-                "Expect Add function to take two array params".to_string(),
+                "Expect Add function to take at lease one array param".to_string(),
             ))
         }
     };

@@ -18,8 +18,11 @@ pub enum ExpressionError {
 }
 
 /// An vectorization expression
-#[derive(Clone, PartialEq, PartialOrd, Debug)]
+#[derive(Clone, Debug)]
 pub enum Expr {
+    /// Literal
+    Literal(ColumnarValue),
+
     /// Scala functions for expression
     ScalarFunction {
         /// The function
@@ -29,8 +32,15 @@ pub enum Expr {
     },
 }
 
+/// Literal value
+#[derive(Clone, PartialEq, PartialOrd, Debug)]
+pub enum LiteralValue {
+    /// Int value
+    Int32(i32),
+}
+
 /// Represents an array of values
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub enum ArrayValues {
     /// Arrow Array of values
     ArrowArray(ArrayRef),
@@ -50,10 +60,12 @@ impl ArrayValues {
 }
 
 /// Represents the result from an expression
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub enum ColumnarValue {
     /// Array of values
     Array(ArrayValues),
+    /// Singular value
+    Scalar(LiteralValue),
 }
 
 /// Accessor of an array
@@ -66,6 +78,7 @@ impl ColumnarValue {
     #[allow(dead_code)]
     fn data_type(&self) -> DataType {
         match self {
+            ColumnarValue::Scalar(LiteralValue::Int32(_)) => Int32,
             ColumnarValue::Array(ArrayValues::ArrowArray(array_value)) => {
                 array_value.data_type().clone()
             }
@@ -76,6 +89,7 @@ impl ColumnarValue {
     /// Return length of this array
     pub fn len(&self) -> u32 {
         match self {
+            ColumnarValue::Scalar(LiteralValue::Int32(_)) => 1,
             ColumnarValue::Array(ArrayValues::ArrowArray(array_value)) => array_value.len() as u32,
             ColumnarValue::Array(ArrayValues::IntColumnVector(_, len)) => len.clone(),
         }
@@ -85,11 +99,12 @@ impl ColumnarValue {
 impl ArrayAccessor for ColumnarValue {
     fn get_int(&self, index: u32) -> Result<i32, ExpressionError> {
         match self {
+            ColumnarValue::Scalar(LiteralValue::Int32(i)) => Ok(i.clone()),
             ColumnarValue::Array(ArrayValues::ArrowArray(array_value)) => Ok(array_value
                 .as_any()
                 .downcast_ref::<Int32Array>()
                 .unwrap()
-                .value(0)),
+                .value(index.try_into().unwrap())),
             ColumnarValue::Array(ArrayValues::IntColumnVector(address, rows)) => {
                 if index >= *rows {
                     return Err(ExpressionError::GeneralError(format!(
@@ -109,11 +124,11 @@ impl ArrayAccessor for ColumnarValue {
 
 #[cfg(test)]
 mod tests {
-    use crate::expression::{ColumnarValue, ArrayValues};
+    use crate::expression::{ArrayValues, ColumnarValue};
 
     use arrow::array::Int32Array;
-    use std::sync::Arc;
     use arrow::datatypes::DataType::Int32;
+    use std::sync::Arc;
 
     #[test]
     fn arrow_array_values() {
