@@ -1,5 +1,14 @@
 package org.viirya.vector.bin
 
+import org.apache.arrow.ffi.FFI
+import org.apache.arrow.ffi.ArrowArray
+import org.apache.arrow.ffi.ArrowSchema
+import org.apache.arrow.ffi.FFIDictionaryProvider
+import org.apache.arrow.memory.RootAllocator
+import org.apache.arrow.vector.BigIntVector
+import org.apache.arrow.vector.FieldVector
+import org.apache.arrow.vector.IntVector
+
 import org.apache.spark.sql.execution.vectorized.OffHeapColumnVector
 import org.apache.spark.sql.types._
 
@@ -30,8 +39,38 @@ object TestVector {
     val anotherVectorAddress = anotherVector.valuesNativeAddress()
 
     // Project(add(vector, vector))
-    added = lib.projectOnTwoVectors(vectorAddress, anotherVectorAddress, 10)
-    // 456 + 123 = 579
-    println(s"returned vector[0]: $added")
+    val array_addresses = lib.projectOnTwoVectors(vectorAddress, anotherVectorAddress, 10)
+    read_arrow_arrays(array_addresses)
+  }
+
+
+  def read_arrow_arrays(arrayAddress: Array[Long]): Unit = {
+    val allocator = new RootAllocator(Long.MaxValue)
+    val ffiDictionaryProvider = new FFIDictionaryProvider()
+
+    for (i <- 0 until arrayAddress.length by 2) {
+      println(s"arrow array: $i")
+
+      val arrowSchema = ArrowSchema.wrap(arrayAddress(i + 1))
+      val arrowArray = ArrowArray.wrap(arrayAddress(i))
+      val imported = FFI.importVector(allocator, arrowArray, arrowSchema, ffiDictionaryProvider)
+
+      val rowCount = imported.getValueCount
+      println("rowCount: " + rowCount)
+
+      for (j <- 0 until rowCount) {
+        println(s"row: $j")
+        imported match {
+          case vector: IntVector =>
+            val value = vector.get(j)
+            println(s"value: $value")
+          case vector: BigIntVector =>
+            val value = vector.get(j)
+            println(s"value: $value")
+        }
+      }
+      arrowArray.close()
+      arrowSchema.close()
+    }
   }
 }

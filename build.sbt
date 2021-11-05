@@ -4,10 +4,17 @@ scalaVersion := "2.12.14"
 
 scalacOptions := Seq("-unchecked", "-deprecation", "-encoding", "utf8", "-feature")
 
+// Use local maven repo to resolve arrow 6.0.0-SNAPSHOT.
+resolvers += Resolver.mavenLocal
+
 libraryDependencies ++= {
   Seq(
     "org.apache.spark"              %%  "spark-core"                % "3.2.0",
-    "org.apache.spark"              %%  "spark-sql"                 % "3.2.0",  
+    "org.apache.spark"              %%  "spark-sql"                 % "3.2.0",
+    "org.apache.arrow"              %  "arrow-vector"               % "6.0.0-SNAPSHOT",
+    "org.apache.arrow"              %  "arrow-memory-core"          % "6.0.0-SNAPSHOT",
+    "org.apache.arrow"              %  "arrow-memory-netty"         % "6.0.0-SNAPSHOT",
+    "org.apache.arrow"              %  "arrow-ffi"                  % "6.0.0-SNAPSHOT"
   )
 }
 
