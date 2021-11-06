@@ -1,0 +1,22 @@
+
+syntax = "proto3";
+
+package spark.expression;
+
+// The basic message representing a Spark expression.
+message Expr {
+ repeated Expr children = 1;
+ ExprType type = 2;
+ Options options = 3;
+
+ // What the expression is actually.
+ enum ExprType {
+   ADD = 0;
+   // More expression types...
+ }
+}
+
+// Options of expressions. The actual options are depending on the expression type.
+message Options {
+
+}

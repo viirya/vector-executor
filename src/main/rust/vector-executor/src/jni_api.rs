@@ -69,9 +69,32 @@ pub extern "system" fn Java_org_viirya_vector_native_VectorLib_projectOnVector(
 }
 
 #[no_mangle]
+/// Same as `Java_org_viirya_vector_native_VectorLib_projectOnTwoVectors`, but linked to different
+/// Scala/JVM package.
+pub extern "system" fn Java_org_apache_spark_sql_execution_NativeLibrary_projectOnTwoVectors(
+    env: JNIEnv,
+    _class: JClass,
+    address1: jlong,
+    address2: jlong,
+    num_row: jint,
+) -> jlongArray {
+    project_on_two_vectors(env, _class, address1, address2, num_row)
+}
+
+#[no_mangle]
 /// Test JNI API. Accept the addresses of two OffHeapColumnVectors of Spark, then perform vectorized
 /// add on the two vectors by a projection operator. Return address of arrow vector.
 pub extern "system" fn Java_org_viirya_vector_native_VectorLib_projectOnTwoVectors(
+    env: JNIEnv,
+    _class: JClass,
+    address1: jlong,
+    address2: jlong,
+    num_row: jint,
+) -> jlongArray {
+    project_on_two_vectors(env, _class, address1, address2, num_row)
+}
+
+fn project_on_two_vectors(
     env: JNIEnv,
     _class: JClass,
     address1: jlong,
