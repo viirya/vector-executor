@@ -8,6 +8,7 @@ pub mod datatype;
 pub mod expression;
 pub mod functions;
 pub mod operators;
+pub mod serde;
 
 // Include generated modules from .proto files.
 #[allow(missing_docs)]

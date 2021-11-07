@@ -4,7 +4,7 @@ pub struct Expr {
     #[prost(message, repeated, tag="1")]
     pub children: ::prost::alloc::vec::Vec<Expr>,
     #[prost(enumeration="expr::ExprType", tag="2")]
-    pub r#type: i32,
+    pub expr_type: i32,
     #[prost(message, optional, tag="3")]
     pub options: ::core::option::Option<Options>,
 }

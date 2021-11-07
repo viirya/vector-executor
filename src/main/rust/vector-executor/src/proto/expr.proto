@@ -8,7 +8,7 @@ option java_package = "org.apache.spark.sql.execution.native.ser";
 // The basic message representing a Spark expression.
 message Expr {
  repeated Expr children = 1;
- ExprType type = 2;
+ ExprType expr_type = 2;
  Options options = 3;
 
  // What the expression is actually.

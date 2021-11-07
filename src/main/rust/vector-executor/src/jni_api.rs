@@ -6,7 +6,7 @@ use jni::JNIEnv;
 
 use arrow::ffi::ArrowArray;
 
-use crate::expression::{ArrayValues, ColumnarValue, Expr, LiteralValue, ArrayAccessor};
+use crate::expression::{ArrayAccessor, ArrayValues, ColumnarValue, Expr, LiteralValue};
 use crate::functions::BuiltinScalarFunction;
 use crate::operators::{Execution, Operator};
 
@@ -49,7 +49,6 @@ pub extern "system" fn Java_org_viirya_vector_native_VectorLib_projectOnVector(
     num_row: jint,
     integer: jint,
 ) -> jint {
-
     let column_vector = ColumnarValue::Array(ArrayValues::IntColumnVector(address, num_row as u32));
     let scan = Operator::Scan(vec![column_vector]);
 
@@ -101,18 +100,16 @@ fn project_on_two_vectors(
     address2: jlong,
     num_row: jint,
 ) -> jlongArray {
-
-    let column_vector1 = ColumnarValue::Array(ArrayValues::IntColumnVector(address1, num_row as u32));
-    let column_vector2 = ColumnarValue::Array(ArrayValues::IntColumnVector(address2, num_row as u32));
+    let column_vector1 =
+        ColumnarValue::Array(ArrayValues::IntColumnVector(address1, num_row as u32));
+    let column_vector2 =
+        ColumnarValue::Array(ArrayValues::IntColumnVector(address2, num_row as u32));
 
     let scan = Operator::Scan(vec![column_vector1, column_vector2]);
 
     let add = Expr::ScalarFunction {
         func: BuiltinScalarFunction::Add,
-        args: vec![
-            Expr::BoundReference(0),
-            Expr::BoundReference(1),
-        ],
+        args: vec![Expr::BoundReference(0), Expr::BoundReference(1)],
     };
 
     let exprs = vec![add];
@@ -122,12 +119,12 @@ fn project_on_two_vectors(
     match results.get(0).unwrap() {
         ColumnarValue::Array(ArrayValues::ArrowArray(array_ref)) => {
             let (array, schema) = unsafe {
-                ArrowArray::into_raw(
-                    ArrowArray::try_new(array_ref.data().clone()).unwrap())
+                ArrowArray::into_raw(ArrowArray::try_new(array_ref.data().clone()).unwrap())
             };
 
             let long_array = env.new_long_array(2).unwrap();
-            env.set_long_array_region(long_array, 0, &vec![array as i64, schema as i64]).unwrap();
+            env.set_long_array_region(long_array, 0, &vec![array as i64, schema as i64])
+                .unwrap();
 
             return long_array;
         }

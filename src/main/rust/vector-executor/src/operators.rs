@@ -74,9 +74,12 @@ fn execute_expr(expr: &Expr, args: &[ColumnarValue]) -> Result<ColumnarValue, Ex
             if column_index < &args.len() {
                 Ok(args[column_index.clone()].clone())
             } else {
-                Err(ExpressionError::GeneralError(format!("column index {} is out of range.", column_index)))
+                Err(ExpressionError::GeneralError(format!(
+                    "column index {} is out of range.",
+                    column_index
+                )))
             }
-        },
+        }
 
         Expr::ScalarFunction {
             func: expr_func,
@@ -116,8 +119,8 @@ mod tests {
     use crate::operators::{Execution, Operator};
 
     use arrow::array::Int32Array;
-    use std::sync::Arc;
     use arrow::datatypes::DataType::Int32;
+    use std::sync::Arc;
 
     #[test]
     fn test_projection() {
@@ -134,7 +137,9 @@ mod tests {
             func: BuiltinScalarFunction::Add,
             args: vec![
                 Expr::Literal(ColumnarValue::Scalar(LiteralValue::Int32(1))),
-                Expr::Literal(ColumnarValue::Array(ArrayValues::ArrowArray(Arc::new(array3)))),
+                Expr::Literal(ColumnarValue::Array(ArrayValues::ArrowArray(Arc::new(
+                    array3,
+                )))),
             ],
         };
 
@@ -158,7 +163,7 @@ mod tests {
                 assert_eq!(array_ref.len(), 5);
                 assert_eq!(array_ref.data().data_type().clone(), Int32);
                 assert_eq!(array_ref.as_ref(), &Int32Array::from(vec![2, 3, 4, 5, 6]));
-            },
+            }
             _ => assert!(false, "Add expression should return ArrowArray"),
         }
 
@@ -167,8 +172,11 @@ mod tests {
             ColumnarValue::Array(ArrayValues::ArrowArray(array_ref)) => {
                 assert_eq!(array_ref.len(), 5);
                 assert_eq!(array_ref.data().data_type().clone(), Int32);
-                assert_eq!(array_ref.as_ref(), &Int32Array::from(vec![8, 9, 10, 11, 12]));
-            },
+                assert_eq!(
+                    array_ref.as_ref(),
+                    &Int32Array::from(vec![8, 9, 10, 11, 12])
+                );
+            }
             _ => assert!(false, "Add expression should return ArrowArray"),
         }
     }
