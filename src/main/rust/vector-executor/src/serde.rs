@@ -13,46 +13,65 @@ impl From<prost::DecodeError> for expression::ExpressionError {
     }
 }
 
-#[allow(dead_code)]
-fn serialize_expr(expr: &spark_expression::Expr) -> Vec<u8> {
-    let mut buf = Vec::new();
-    buf.reserve(expr.encoded_len());
-    // Unwrap is safe, since we have reserved sufficient capacity in the vector.
-    expr.encode(&mut buf).unwrap();
-    buf
+/// Trait for serialization/deserialization
+/// E is error type, N is native type
+pub trait Serde<E, N> where Self: Sized {
+    /// Serialize intermediate object to bytes
+    fn serialize(self: &Self) -> Vec<u8>;
+
+    /// Deserilize bytes to natintermediateive object
+    fn deserialize(self: &Self, buf: &[u8]) -> Result<Self, E>;
+
+    /// Deserilize bytes to native object, e.g. expression, operator
+    fn to_native(self: &Self, buf: &[u8]) -> Result<N, E>;
+
+    /// Convert from intermediate object ot native object
+    fn convert_to_native(self: &Self) -> Result<N, E>;
 }
 
-fn deserialize_expr(buf: &[u8]) -> Result<spark_expression::Expr, expression::ExpressionError> {
-    match spark_expression::Expr::decode(&mut Cursor::new(buf)) {
-        Ok(e) => Ok(e),
-        Err(err) => Err(expression::ExpressionError::from(err)),
+impl Serde<expression::ExpressionError, expression::Expr> for spark_expression::Expr {
+    #[allow(dead_code)]
+    fn serialize(self: &Self) -> Vec<u8> {
+        let mut buf = Vec::new();
+        buf.reserve(self.encoded_len());
+        // Unwrap is safe, since we have reserved sufficient capacity in the vector.
+        self.encode(&mut buf).unwrap();
+        buf
+    }
+
+    fn deserialize(self: &Self, buf: &[u8]) -> Result<Self, expression::ExpressionError> {
+        match spark_expression::Expr::decode(&mut Cursor::new(buf)) {
+            Ok(e) => Ok(e),
+            Err(err) => Err(expression::ExpressionError::from(err)),
+        }
+    }
+
+    fn to_native(self: &Self, buf: &[u8]) -> Result<expression::Expr, expression::ExpressionError> {
+        let decoded = self.deserialize(buf)?;
+        decoded.convert_to_native()
+    }
+
+    fn convert_to_native(self: &Self) -> Result<expression::Expr, expression::ExpressionError> {
+        match spark_expression::expr::ExprType::from_i32(self.expr_type) {
+            Some(spark_expression::expr::ExprType::Add) => {
+                let children = self.children.iter().map(|e| {
+                    e.convert_to_native().unwrap()
+                }).into_iter().collect::<Vec<expression::Expr>>();
+
+                Ok(functions::add( children.get(0).unwrap().clone(), children.get(0).unwrap().clone()))
+            },
+            None => Err(expression::ExpressionError::NativeExprNotFound(self.expr_type as i32)),
+        }
     }
 }
 
-/// Deserilize bytes to native expression
-pub fn deserialize(buf: &[u8]) -> Result<expression::Expr, expression::ExpressionError> {
-    let decoded = deserialize_expr(buf)?;
-    convert_to_native_expr(&decoded)
-}
 
-fn convert_to_native_expr(expr: &spark_expression::Expr) -> Result<expression::Expr, expression::ExpressionError> {
-    match spark_expression::expr::ExprType::from_i32(expr.expr_type) {
-        Some(spark_expression::expr::ExprType::Add) => {
-            let children = expr.children.iter().map(|e| {
-                convert_to_native_expr(&e).unwrap()
-            }).into_iter().collect::<Vec<expression::Expr>>();
-
-            Ok(functions::add( children.get(0).unwrap().clone(), children.get(0).unwrap().clone()))
-        },
-        None => Err(expression::ExpressionError::NativeExprNotFound(expr.expr_type as i32)),
-    }
-}
 
 
 #[cfg(test)]
 mod tests {
     use crate::spark_expression;
-    use crate::serde::{serialize_expr, deserialize_expr};
+    use crate::serde::Serde;
 
     #[test]
     fn basic() {
@@ -69,8 +88,8 @@ mod tests {
         let mut expr = spark_expression::Expr::default();
         expr.set_expr_type(spark_expression::expr::ExprType::Add);
 
-        let encoded = serialize_expr(&expr);
-        let decoded = deserialize_expr(&encoded.as_slice());
+        let encoded = expr.serialize();
+        let decoded = expr.deserialize(&encoded.as_slice());
 
         assert_eq!(expr, decoded.unwrap())
     }
