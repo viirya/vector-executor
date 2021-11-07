@@ -12,7 +12,7 @@ pub mod operators;
 // Include generated modules from .proto files.
 #[allow(missing_docs)]
 pub mod spark_expression {
-    include!(concat!(env!("OUT_DIR"), "/spark.expression.rs"));
+    include!(concat!("generated", "/spark.expression.rs"));
 }
 
 #[cfg(test)]

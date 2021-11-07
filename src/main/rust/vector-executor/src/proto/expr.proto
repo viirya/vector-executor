@@ -3,6 +3,8 @@ syntax = "proto3";
 
 package spark.expression;
 
+option java_package = "org.apache.spark.sql.execution.native.ser";
+
 // The basic message representing a Spark expression.
 message Expr {
  repeated Expr children = 1;
