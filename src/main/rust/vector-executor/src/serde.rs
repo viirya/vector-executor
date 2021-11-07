@@ -4,8 +4,17 @@ use std::io::Cursor;
 use prost::Message;
 
 use crate::spark_expression;
+use crate::expression;
+use crate::functions;
 
-pub fn serialize_expr(expr: &spark_expression::Expr) -> Vec<u8> {
+impl From<prost::DecodeError> for expression::ExpressionError {
+    fn from(error: prost::DecodeError) -> expression::ExpressionError {
+        expression::ExpressionError::DeserializeError(error.to_string())
+    }
+}
+
+#[allow(dead_code)]
+fn serialize_expr(expr: &spark_expression::Expr) -> Vec<u8> {
     let mut buf = Vec::new();
     buf.reserve(expr.encoded_len());
     // Unwrap is safe, since we have reserved sufficient capacity in the vector.
@@ -13,9 +22,32 @@ pub fn serialize_expr(expr: &spark_expression::Expr) -> Vec<u8> {
     buf
 }
 
-pub fn deserialize_expr(buf: &[u8]) -> Result<spark_expression::Expr, prost::DecodeError> {
-    spark_expression::Expr::decode(&mut Cursor::new(buf))
+fn deserialize_expr(buf: &[u8]) -> Result<spark_expression::Expr, expression::ExpressionError> {
+    match spark_expression::Expr::decode(&mut Cursor::new(buf)) {
+        Ok(e) => Ok(e),
+        Err(err) => Err(expression::ExpressionError::from(err)),
+    }
 }
+
+/// Deserilize bytes to native expression
+pub fn deserialize(buf: &[u8]) -> Result<expression::Expr, expression::ExpressionError> {
+    let decoded = deserialize_expr(buf)?;
+    convert_to_native_expr(&decoded)
+}
+
+fn convert_to_native_expr(expr: &spark_expression::Expr) -> Result<expression::Expr, expression::ExpressionError> {
+    match spark_expression::expr::ExprType::from_i32(expr.expr_type) {
+        Some(spark_expression::expr::ExprType::Add) => {
+            let children = expr.children.iter().map(|e| {
+                convert_to_native_expr(&e).unwrap()
+            }).into_iter().collect::<Vec<expression::Expr>>();
+
+            Ok(functions::add( children.get(0).unwrap().clone(), children.get(0).unwrap().clone()))
+        },
+        None => Err(expression::ExpressionError::NativeExprNotFound(expr.expr_type as i32)),
+    }
+}
+
 
 #[cfg(test)]
 mod tests {

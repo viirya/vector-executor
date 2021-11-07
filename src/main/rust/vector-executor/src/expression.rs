@@ -15,6 +15,14 @@ pub enum ExpressionError {
     #[allow(dead_code)]
     #[error("General expression error with reason {0}.")]
     GeneralError(String),
+
+    /// Cannot find corresponding native expression
+    #[error("Fail to find native expression from serialized expr {0},")]
+    NativeExprNotFound(i32),
+
+    /// Deserializarion error
+    #[error("Fail to deserialize to native expression with reason {0},")]
+    DeserializeError(String),
 }
 
 /// An vectorization expression
