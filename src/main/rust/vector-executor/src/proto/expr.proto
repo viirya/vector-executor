@@ -7,18 +7,34 @@ option java_package = "org.apache.spark.sql.execution.native.ser";
 
 // The basic message representing a Spark expression.
 message Expr {
- repeated Expr children = 1;
- ExprType expr_type = 2;
- Options options = 3;
+  ExprType expr_type = 1;
 
- // What the expression is actually.
- enum ExprType {
-   ADD = 0;
-   // More expression types...
- }
+  oneof expr_struct {
+    Literal literal = 2;
+    Add add = 3;
+  }
+
+  // What the expression is actually.
+  enum ExprType {
+    LITERAL = 0;
+    ADD = 1;
+    // More expression types...
+  }
 }
 
-// Options of expressions. The actual options are depending on the expression type.
-message Options {
+message Literal {
+  oneof value {
+    bool bool_val = 1;
+    int32 int_val = 2;
+    int64 long_val = 3;
+    float float_val = 4;
+    double double_val = 5;
+    string string_val = 6;
+    bytes bytes_val = 7;
+   }
+}
 
+message Add {
+  Expr left = 1;
+  Expr right = 2;
 }

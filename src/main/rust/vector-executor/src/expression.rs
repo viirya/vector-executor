@@ -6,7 +6,7 @@ use super::functions::BuiltinScalarFunction;
 // use serde::{Deserialize, Serialize};
 use arrow::array::{ArrayRef, Int32Array};
 use arrow::datatypes::DataType;
-use arrow::datatypes::DataType::Int32;
+use arrow::datatypes::DataType::{Int32, Int64, Float32, Float64, Utf8, Binary, Boolean};
 
 /// Error returned when there is an error during executing an expression.
 #[derive(thiserror::Error, Debug)]
@@ -48,6 +48,12 @@ pub enum Expr {
 pub enum LiteralValue {
     /// Int value
     Int32(i32),
+    Int64(i64),
+    Float(f32),
+    Double(f64),
+    String(String),
+    Bytes(Vec<u8>),
+    Bool(bool),
 }
 
 /// Represents an array of values
@@ -90,6 +96,12 @@ impl ColumnarValue {
     fn data_type(&self) -> DataType {
         match self {
             ColumnarValue::Scalar(LiteralValue::Int32(_)) => Int32,
+            ColumnarValue::Scalar(LiteralValue::Int64(_)) => Int64,
+            ColumnarValue::Scalar(LiteralValue::Float(_)) => Float32,
+            ColumnarValue::Scalar(LiteralValue::Double(_)) => Float64,
+            ColumnarValue::Scalar(LiteralValue::String(_)) => Utf8,
+            ColumnarValue::Scalar(LiteralValue::Bytes(_)) => Binary,
+            ColumnarValue::Scalar(LiteralValue::Bool(_)) => Boolean,
             ColumnarValue::Array(ArrayValues::ArrowArray(array_value)) => {
                 array_value.data_type().clone()
             }
@@ -100,7 +112,7 @@ impl ColumnarValue {
     /// Return length of this array
     pub fn len(&self) -> u32 {
         match self {
-            ColumnarValue::Scalar(LiteralValue::Int32(_)) => 1,
+            ColumnarValue::Scalar(_) => 1,
             ColumnarValue::Array(ArrayValues::ArrowArray(array_value)) => array_value.len() as u32,
             ColumnarValue::Array(ArrayValues::IntColumnVector(_, len)) => len.clone(),
         }
@@ -111,6 +123,11 @@ impl ArrayAccessor for ColumnarValue {
     fn get_int(&self, index: u32) -> Result<i32, ExpressionError> {
         match self {
             ColumnarValue::Scalar(LiteralValue::Int32(i)) => Ok(i.clone()),
+            // As Spark already analyzes and resolves the expression, we should not ask int from other scalar literals.
+            ColumnarValue::Scalar(literal) => Err(ExpressionError::GeneralError(format!(
+                "Error when getting integer from a scalar literal {:?}",
+                literal
+            ))),
             ColumnarValue::Array(ArrayValues::ArrowArray(array_value)) => Ok(array_value
                 .as_any()
                 .downcast_ref::<Int32Array>()
