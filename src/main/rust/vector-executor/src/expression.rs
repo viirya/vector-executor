@@ -48,11 +48,17 @@ pub enum Expr {
 pub enum LiteralValue {
     /// Int value
     Int32(i32),
+    /// Long value
     Int64(i64),
+    /// Float value
     Float(f32),
+    /// Double value
     Double(f64),
+    /// String value
     String(String),
+    /// Binary value
     Bytes(Vec<u8>),
+    /// Boolean value
     Bool(bool),
 }
 
