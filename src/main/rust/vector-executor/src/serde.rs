@@ -77,6 +77,7 @@ where
     Self: Sized,
 {
     /// Serialize intermediate object to bytes
+    /// For test only as we don't actually need to serialize objects from native to Scala/Java
     fn serialize(self: &Self) -> Vec<u8>;
 
     /// Deserilize bytes to native object, e.g. expression, operator
