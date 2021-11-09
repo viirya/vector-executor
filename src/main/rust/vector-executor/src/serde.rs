@@ -53,6 +53,23 @@ impl ToProto<spark_expression::Expr> for expression::Expr {
     }
 }
 
+
+/// Deserialize bytes to protobuf type of expression
+pub fn deserialize_expr(buf: &[u8]) -> Result<spark_expression::Expr, expression::ExpressionError> {
+    match spark_expression::Expr::decode(&mut Cursor::new(buf)) {
+        Ok(e) => Ok(e),
+        Err(err) => Err(expression::ExpressionError::from(err)),
+    }
+}
+
+/// Deserialize bytes to protobuf type of operator
+pub fn deserialize_op(buf: &[u8]) -> Result<spark_operator::Operator, ExecutionError> {
+    match spark_operator::Operator::decode(&mut Cursor::new(buf)) {
+        Ok(e) => Ok(e),
+        Err(err) => Err(ExecutionError::from(err)),
+    }
+}
+
 /// Trait for serialization/deserialization
 /// E is error type, N is native type
 pub trait Serde<E, N>
@@ -62,14 +79,8 @@ where
     /// Serialize intermediate object to bytes
     fn serialize(self: &Self) -> Vec<u8>;
 
-    /// Deserilize bytes to natintermediateive object
-    fn deserialize(self: &Self, buf: &[u8]) -> Result<Self, E>;
-
     /// Deserilize bytes to native object, e.g. expression, operator
-    fn to_native(self: &Self, buf: &[u8]) -> Result<N, E>;
-
-    /// Convert from intermediate object ot native object
-    fn convert_to_native(self: &Self) -> Result<N, E>;
+    fn to_native(self: &Self) -> Result<N, E>;
 }
 
 impl Serde<expression::ExpressionError, expression::Expr> for spark_expression::Expr {
@@ -82,25 +93,13 @@ impl Serde<expression::ExpressionError, expression::Expr> for spark_expression::
         buf
     }
 
-    fn deserialize(self: &Self, buf: &[u8]) -> Result<Self, expression::ExpressionError> {
-        match spark_expression::Expr::decode(&mut Cursor::new(buf)) {
-            Ok(e) => Ok(e),
-            Err(err) => Err(expression::ExpressionError::from(err)),
-        }
-    }
-
-    fn to_native(self: &Self, buf: &[u8]) -> Result<expression::Expr, expression::ExpressionError> {
-        let decoded = self.deserialize(buf)?;
-        decoded.convert_to_native()
-    }
-
-    fn convert_to_native(self: &Self) -> Result<expression::Expr, expression::ExpressionError> {
+    fn to_native(self: &Self) -> Result<expression::Expr, expression::ExpressionError> {
         match spark_expression::expr::ExprType::from_i32(self.expr_type) {
             Some(spark_expression::expr::ExprType::Add) => match self.expr_struct.as_ref().unwrap()
             {
                 spark_expression::expr::ExprStruct::Add(add) => {
-                    let left = add.left.as_ref().unwrap().convert_to_native().unwrap();
-                    let right = add.right.as_ref().unwrap().convert_to_native().unwrap();
+                    let left = add.left.as_ref().unwrap().to_native().unwrap();
+                    let right = add.right.as_ref().unwrap().to_native().unwrap();
 
                     Ok(functions::add(left.clone(), right.clone()))
                 }
@@ -175,19 +174,7 @@ impl Serde<ExecutionError, Operator> for spark_operator::Operator {
         buf
     }
 
-    fn deserialize(self: &Self, buf: &[u8]) -> Result<Self, ExecutionError> {
-        match spark_operator::Operator::decode(&mut Cursor::new(buf)) {
-            Ok(e) => Ok(e),
-            Err(err) => Err(ExecutionError::from(err)),
-        }
-    }
-
-    fn to_native(self: &Self, buf: &[u8]) -> Result<Operator, ExecutionError> {
-        let decoded = self.deserialize(buf)?;
-        decoded.convert_to_native()
-    }
-
-    fn convert_to_native(self: &Self) -> Result<Operator, ExecutionError> {
+    fn to_native(self: &Self) -> Result<Operator, ExecutionError> {
         match spark_operator::operator::OperatorType::from_i32(self.op_type) {
             Some(spark_operator::operator::OperatorType::Projection) => {
                 match self.op_struct.as_ref().unwrap() {
@@ -195,7 +182,7 @@ impl Serde<ExecutionError, Operator> for spark_operator::Operator {
                         let project_list = project
                             .project_list
                             .iter()
-                            .map(|expr| expr.convert_to_native().unwrap())
+                            .map(|expr| expr.to_native().unwrap())
                             .collect::<Vec<expression::Expr>>();
 
                         // We don't serialize leaf operator from Spark. Once there is empty child node for a serialized
@@ -204,7 +191,7 @@ impl Serde<ExecutionError, Operator> for spark_operator::Operator {
                         let child = project
                             .child
                             .as_ref()
-                            .map(|c| c.convert_to_native())
+                            .map(|c| c.to_native())
                             .unwrap_or_else(|| Ok(Operator::Scan(vec![])))
                             .unwrap();
 
@@ -220,9 +207,9 @@ impl Serde<ExecutionError, Operator> for spark_operator::Operator {
 #[cfg(test)]
 mod tests {
     use crate::expression;
-    use crate::functions;
     use crate::operators;
-    use crate::serde::Serde;
+    use crate::functions;
+    use crate::serde::{Serde, deserialize_expr, deserialize_op};
     use crate::spark_expression;
     use crate::spark_operator;
 
@@ -242,7 +229,7 @@ mod tests {
         expr.set_expr_type(spark_expression::expr::ExprType::Add);
 
         let encoded = expr.serialize();
-        let decoded = expr.deserialize(&encoded.as_slice());
+        let decoded = deserialize_expr(&encoded.as_slice());
 
         assert_eq!(expr, decoded.unwrap())
     }
@@ -275,7 +262,7 @@ mod tests {
         )));
 
         let encoded = expr.serialize();
-        match expr.to_native(&encoded.as_slice()).unwrap() {
+        match deserialize_expr(&encoded.as_slice()).unwrap().to_native().unwrap() {
             expression::Expr::ScalarFunction { func, .. } => {
                 assert_eq!(func, functions::BuiltinScalarFunction::Add)
             }
@@ -295,7 +282,7 @@ mod tests {
         )));
 
         let encoded = op.serialize();
-        match op.to_native(&encoded.as_slice()).unwrap() {
+        match deserialize_op(&encoded.as_slice()).unwrap().to_native().unwrap() {
             operators::Operator::Projection(project_list, child) => {
                 assert_eq!(project_list.len(), 0);
                 match child.as_ref() {
