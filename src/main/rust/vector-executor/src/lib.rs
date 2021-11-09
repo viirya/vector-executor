@@ -13,7 +13,13 @@ pub mod serde;
 // Include generated modules from .proto files.
 #[allow(missing_docs)]
 pub mod spark_expression {
-    include!(concat!("generated", "/spark.expression.rs"));
+    include!(concat!("generated", "/spark.spark_expression.rs"));
+}
+
+// Include generated modules from .proto files.
+#[allow(missing_docs)]
+pub mod spark_operator {
+    include!(concat!("generated", "/spark.spark_operator.rs"));
 }
 
 #[cfg(test)]

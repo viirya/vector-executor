@@ -1,7 +1,7 @@
 
 syntax = "proto3";
 
-package spark.expression;
+package spark.spark_expression;
 
 option java_package = "org.apache.spark.sql.execution.native.ser";
 

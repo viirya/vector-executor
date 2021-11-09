@@ -6,7 +6,7 @@ use super::functions::BuiltinScalarFunction;
 // use serde::{Deserialize, Serialize};
 use arrow::array::{ArrayRef, Int32Array};
 use arrow::datatypes::DataType;
-use arrow::datatypes::DataType::{Int32, Int64, Float32, Float64, Utf8, Binary, Boolean};
+use arrow::datatypes::DataType::{Binary, Boolean, Float32, Float64, Int32, Int64, Utf8};
 
 /// Error returned when there is an error during executing an expression.
 #[derive(thiserror::Error, Debug)]

@@ -2,11 +2,12 @@
 
 use prost::Message;
 use std::io::Cursor;
-// use std::fmt::{Debug, Formatter};
 
 use crate::expression;
 use crate::functions;
+use crate::operators::{ExecutionError, Operator};
 use crate::spark_expression;
+use crate::spark_operator;
 
 impl From<prost::DecodeError> for expression::ExpressionError {
     fn from(error: prost::DecodeError) -> expression::ExpressionError {
@@ -14,16 +15,11 @@ impl From<prost::DecodeError> for expression::ExpressionError {
     }
 }
 
-/*
-impl Debug for spark_expression::expr::Expr {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        match self {
-            spark_expression::expr::Expr::Add(..) => f.write_str("add"),
-            spark_expression::expr::Expr::Literal(..) => f.write_str("literal"),
-        }
+impl From<prost::DecodeError> for ExecutionError {
+    fn from(error: prost::DecodeError) -> ExecutionError {
+        ExecutionError::DeserializeError(error.to_string())
     }
 }
- */
 
 /// Trait for serialization/deserialization
 /// E is error type, N is native type
@@ -76,7 +72,7 @@ impl Serde<expression::ExpressionError, expression::Expr> for spark_expression::
 
                     Ok(functions::add(left.clone(), right.clone()))
                 }
-                other => Err(expression::ExpressionError::GeneralError(format!(
+                other => Err(expression::ExpressionError::DeserializeError(format!(
                     "Add message type shouldn't have {:?} expr!",
                     other
                 ))),
@@ -86,58 +82,105 @@ impl Serde<expression::ExpressionError, expression::Expr> for spark_expression::
                     spark_expression::expr::ExprStruct::Literal(spark_expression::Literal {
                         value,
                     }) => match value {
-                        Some(spark_expression::literal::Value::IntVal(i)) => {
-                            Ok(expression::Expr::Literal(expression::ColumnarValue::Scalar(
+                        Some(spark_expression::literal::Value::IntVal(i)) => Ok(
+                            expression::Expr::Literal(expression::ColumnarValue::Scalar(
                                 expression::LiteralValue::Int32(*i),
-                            )))
-                        }
-                        Some(spark_expression::literal::Value::LongVal(l)) => {
-                            Ok(expression::Expr::Literal(expression::ColumnarValue::Scalar(
+                            )),
+                        ),
+                        Some(spark_expression::literal::Value::LongVal(l)) => Ok(
+                            expression::Expr::Literal(expression::ColumnarValue::Scalar(
                                 expression::LiteralValue::Int64(*l),
-                            )))
-                        }
-                        Some(spark_expression::literal::Value::FloatVal(f)) => {
-                            Ok(expression::Expr::Literal(expression::ColumnarValue::Scalar(
+                            )),
+                        ),
+                        Some(spark_expression::literal::Value::FloatVal(f)) => Ok(
+                            expression::Expr::Literal(expression::ColumnarValue::Scalar(
                                 expression::LiteralValue::Float(*f),
-                            )))
-                        }
-                        Some(spark_expression::literal::Value::DoubleVal(d)) => {
-                            Ok(expression::Expr::Literal(expression::ColumnarValue::Scalar(
+                            )),
+                        ),
+                        Some(spark_expression::literal::Value::DoubleVal(d)) => Ok(
+                            expression::Expr::Literal(expression::ColumnarValue::Scalar(
                                 expression::LiteralValue::Double(*d),
-                            )))
-                        }
-                        Some(spark_expression::literal::Value::StringVal(s)) => {
-                            Ok(expression::Expr::Literal(expression::ColumnarValue::Scalar(
+                            )),
+                        ),
+                        Some(spark_expression::literal::Value::StringVal(s)) => Ok(
+                            expression::Expr::Literal(expression::ColumnarValue::Scalar(
                                 expression::LiteralValue::String(s.clone()),
-                            )))
-                        }
-                        Some(spark_expression::literal::Value::BytesVal(b)) => {
-                            Ok(expression::Expr::Literal(expression::ColumnarValue::Scalar(
+                            )),
+                        ),
+                        Some(spark_expression::literal::Value::BytesVal(b)) => Ok(
+                            expression::Expr::Literal(expression::ColumnarValue::Scalar(
                                 expression::LiteralValue::Bytes(b.clone()),
-                            )))
-                        }
-                        Some(spark_expression::literal::Value::BoolVal(b)) => {
-                            Ok(expression::Expr::Literal(expression::ColumnarValue::Scalar(
+                            )),
+                        ),
+                        Some(spark_expression::literal::Value::BoolVal(b)) => Ok(
+                            expression::Expr::Literal(expression::ColumnarValue::Scalar(
                                 expression::LiteralValue::Bool(*b),
-                            )))
-                        },
+                            )),
+                        ),
                         None => Err(expression::ExpressionError::GeneralError(format!(
-                            "Literal message type shouldn't have empty value!"))),
+                            "Literal message type shouldn't have empty value!"
+                        ))),
                     },
-                    other => Err(expression::ExpressionError::GeneralError(format!(
+                    other => Err(expression::ExpressionError::DeserializeError(format!(
                         "Literal message type shouldn't have {:?} expr!",
                         other
                     ))),
                 }
             }
-            /*
-            Some(_) => Err(expression::ExpressionError::NativeExprNotFound(
-                self.expr_type as i32,
-            )),
-             */
             None => Err(expression::ExpressionError::NativeExprNotFound(
                 self.expr_type as i32,
             )),
+        }
+    }
+}
+
+impl Serde<ExecutionError, Operator> for spark_operator::Operator {
+    fn serialize(self: &Self) -> Vec<u8> {
+        let mut buf = Vec::new();
+        buf.reserve(self.encoded_len());
+        // Unwrap is safe, since we have reserved sufficient capacity in the vector.
+        self.encode(&mut buf).unwrap();
+        buf
+    }
+
+    fn deserialize(self: &Self, buf: &[u8]) -> Result<Self, ExecutionError> {
+        match spark_operator::Operator::decode(&mut Cursor::new(buf)) {
+            Ok(e) => Ok(e),
+            Err(err) => Err(ExecutionError::from(err)),
+        }
+    }
+
+    fn to_native(self: &Self, buf: &[u8]) -> Result<Operator, ExecutionError> {
+        let decoded = self.deserialize(buf)?;
+        decoded.convert_to_native()
+    }
+
+    fn convert_to_native(self: &Self) -> Result<Operator, ExecutionError> {
+        match spark_operator::operator::OperatorType::from_i32(self.op_type) {
+            Some(spark_operator::operator::OperatorType::Projection) => {
+                match self.op_struct.as_ref().unwrap() {
+                    spark_operator::operator::OpStruct::Projection(project) => {
+                        let project_list = project
+                            .project_list
+                            .iter()
+                            .map(|expr| expr.convert_to_native().unwrap())
+                            .collect::<Vec<expression::Expr>>();
+
+                        // We don't serialize leaf operator from Spark. Once there is empty child node for a serialized
+                        // operator, it takes array batch from Spark.
+                        // todo: put actual array batch.
+                        let child = project
+                            .child
+                            .as_ref()
+                            .map(|c| c.convert_to_native())
+                            .unwrap_or_else(|| Ok(Operator::Scan(vec![])))
+                            .unwrap();
+
+                        Ok(Operator::Projection(project_list, Box::new(child)))
+                    }
+                }
+            }
+            None => Err(ExecutionError::NativeOpNotFound(self.op_type as i32)),
         }
     }
 }
@@ -146,8 +189,10 @@ impl Serde<expression::ExpressionError, expression::Expr> for spark_expression::
 mod tests {
     use crate::expression;
     use crate::functions;
+    use crate::operators;
     use crate::serde::Serde;
     use crate::spark_expression;
+    use crate::spark_operator;
 
     #[test]
     fn basic() {
@@ -171,7 +216,7 @@ mod tests {
     }
 
     #[test]
-    fn to_native() {
+    fn to_native_expr() {
         let mut expr = spark_expression::Expr::default();
         expr.set_expr_type(spark_expression::expr::ExprType::Add);
 
@@ -203,6 +248,30 @@ mod tests {
                 assert_eq!(func, functions::BuiltinScalarFunction::Add)
             }
             _ => assert!(false, "wrong native expression!"),
+        }
+    }
+
+    #[test]
+    fn to_native_operator() {
+        let mut op = spark_operator::Operator::default();
+        op.set_op_type(spark_operator::operator::OperatorType::Projection);
+        op.op_struct = Some(spark_operator::operator::OpStruct::Projection(Box::new(
+            spark_operator::Projection {
+                project_list: vec![],
+                child: None,
+            },
+        )));
+
+        let encoded = op.serialize();
+        match op.to_native(&encoded.as_slice()).unwrap() {
+            operators::Operator::Projection(project_list, child) => {
+                assert_eq!(project_list.len(), 0);
+                match child.as_ref() {
+                    operators::Operator::Scan(batch) => assert!(batch.is_empty()),
+                    _ => assert!(false, "wrong native operator!"),
+                }
+            }
+            _ => assert!(false, "wrong native operator!"),
         }
     }
 }

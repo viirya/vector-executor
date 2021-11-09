@@ -1,0 +1,28 @@
+
+syntax = "proto3";
+
+package spark.spark_operator;
+
+import "proto/expr.proto";
+
+option java_package = "org.apache.spark.sql.operator.native.ser";
+
+// The basic message representing a Spark operator.
+message Operator {
+  OperatorType op_type = 1;
+
+  oneof op_struct {
+    Projection projection = 2;
+  }
+
+  // What the operator is actually.
+  enum OperatorType {
+    PROJECTION = 0;
+    // More operator types...
+  }
+}
+
+message Projection {
+  repeated spark.spark_expression.Expr project_list = 1;
+  Operator child = 2;
+}

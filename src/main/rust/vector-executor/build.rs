@@ -7,6 +7,9 @@ fn main() -> Result<()> {
 
     prost_build::Config::new()
         .out_dir("src/generated")
-        .compile_protos(&["src/proto/expr.proto"], &["src/"])?;
+        .compile_protos(
+            &["src/proto/expr.proto", "src/proto/operator.proto"],
+            &["src/"],
+        )?;
     Ok(())
 }
