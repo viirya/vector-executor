@@ -8,6 +8,7 @@ use crate::functions;
 use crate::operators::{ExecutionError, Operator};
 use crate::spark_expression;
 use crate::spark_operator;
+use std::fmt::Error;
 
 impl From<prost::DecodeError> for expression::ExpressionError {
     fn from(error: prost::DecodeError) -> expression::ExpressionError {
@@ -18,6 +19,37 @@ impl From<prost::DecodeError> for expression::ExpressionError {
 impl From<prost::DecodeError> for ExecutionError {
     fn from(error: prost::DecodeError) -> ExecutionError {
         ExecutionError::DeserializeError(error.to_string())
+    }
+}
+
+/// A trait to convert a native representation to its protobuf one.
+/// P is the protobuf type.
+pub trait ToProto<P> {
+   /// Convert to protobuf type P.
+   fn to_proto(self: &Self) -> Result<P, Error>;
+}
+
+/// Convert expression::Expr to spark_expression::Expr.
+impl ToProto<spark_expression::Expr> for expression::Expr {
+    fn to_proto(self: &Self) -> Result<spark_expression::Expr, Error> {
+        match self {
+            expression::Expr::ScalarFunction { func, args } => {
+                let proto_args = args.into_iter().map(|e| {
+                    e.to_proto().unwrap()
+                }).collect::<Vec<_>>();
+                match func {
+                   functions::BuiltinScalarFunction::Add => {
+                       let add_struct = spark_expression::expr::ExprStruct::Add(Box::new(spark_expression::Add {
+                           left: Some(Box::new(proto_args.get(0).unwrap().clone())),
+                           right: Some(Box::new(proto_args.get(1).unwrap().clone())),
+                       }));
+
+                       Ok(spark_expression::Expr { expr_type: 1, expr_struct: Some(add_struct) })
+                   },
+                }
+            },
+            _ => Ok(spark_expression::Expr::default()),
+        }
     }
 }
 
