@@ -4,6 +4,9 @@ use jni::objects::{JClass, JString, ReleaseMode};
 use jni::sys::{jbyteArray, jint, jlong, jlongArray};
 use jni::JNIEnv;
 
+use lazy_static::lazy_static;
+use std::sync::Mutex;
+
 use arrow::ffi::ArrowArray;
 
 use crate::expression::{ArrayAccessor, ArrayValues, ColumnarValue, Expr, LiteralValue};
@@ -117,6 +120,100 @@ fn project_on_two_vectors(
     let exprs = vec![add];
     let projection = Operator::Projection(exprs, Box::new(scan));
     let results = projection.execute().unwrap();
+
+    match results.get(0).unwrap() {
+        ColumnarValue::Array(ArrayValues::ArrowArray(array_ref)) => {
+            let (array, schema) = unsafe {
+                ArrowArray::into_raw(ArrowArray::try_new(array_ref.data().clone()).unwrap())
+            };
+
+            let long_array = env.new_long_array(2).unwrap();
+            env.set_long_array_region(long_array, 0, &vec![array as i64, schema as i64])
+                .unwrap();
+
+            return long_array;
+        }
+        _ => return env.new_long_array(0).unwrap(),
+    }
+}
+
+lazy_static! {
+    static ref PLANS: Mutex<Vec<Operator>> = Mutex::new(vec![]);
+}
+
+#[no_mangle]
+/// Test JNI API. Accept serialized query plan and return an integer representing the plan.
+/// In later query execution, JVM can pass the integer to ask execution of the particular plan.
+pub extern "system" fn Java_org_viirya_vector_native_VectorLib_createPlan(
+    env: JNIEnv,
+    _class: JClass,
+    serialized_query: jbyteArray,
+) -> jint {
+    let mut i = 0;
+    let bytes_elements = env
+        .get_byte_array_elements(serialized_query, ReleaseMode::NoCopyBack)
+        .unwrap()
+        .as_ptr();
+    let mut encoded: Vec<u8> = vec![];
+    while i < env.get_array_length(serialized_query).unwrap() as usize {
+        let byte = unsafe { *(bytes_elements.add(i)) };
+        encoded.push(byte as u8);
+        i += 1;
+    }
+
+    // Deserialize query plan
+    let query = serde::deserialize_op(&encoded.as_slice())
+        .unwrap()
+        .to_native()
+        .unwrap();
+
+    PLANS.lock().unwrap().push(query);
+    PLANS.lock().unwrap().len() as i32 - 1
+}
+
+#[no_mangle]
+/// Test JNI API. Accept serialized query plan and the addresses of OffHeapColumnVectors of Spark,
+/// then execute the query. Return addresses of arrow vector.
+pub extern "system" fn Java_org_viirya_vector_native_VectorLib_executeExistingPlan(
+    env: JNIEnv,
+    _class: JClass,
+    plan_id: jint,
+    addresses: jlongArray,
+    num_row: jint,
+) -> jlongArray {
+    let num_arrays = env.get_array_length(addresses).unwrap() as usize;
+    let array_elements = env
+        .get_long_array_elements(addresses, ReleaseMode::NoCopyBack)
+        .unwrap()
+        .as_ptr();
+
+    let mut i: usize = 0;
+    let mut inputs: Vec<ColumnarValue> = vec![];
+    while i < num_arrays {
+        let array = ColumnarValue::Array(ArrayValues::IntColumnVector(
+            unsafe { *(array_elements.add(i)) },
+            num_row as u32,
+        ));
+        inputs.push(array);
+        i += 1;
+    }
+
+    // Retrieve the query
+    let query = PLANS.lock().unwrap().get(plan_id as usize).unwrap().clone();
+
+    // Replace with inputs
+    let query_with_inputs = match query {
+        Operator::Projection(exprs, child) => {
+            let new_child = match *child {
+                Operator::Scan(arrays) if arrays.len() == 0 => Operator::Scan(inputs),
+                _ => *child,
+            };
+            Operator::Projection(exprs, Box::new(new_child))
+        }
+        _ => query.clone(),
+    };
+
+    let results = query_with_inputs.execute().unwrap();
 
     match results.get(0).unwrap() {
         ColumnarValue::Array(ArrayValues::ArrowArray(array_ref)) => {

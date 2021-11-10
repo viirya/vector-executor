@@ -116,8 +116,12 @@ object TestVector {
     val anotherVectorAddress = anotherVector.valuesNativeAddress()
 
     println(s"Executing query plan: ${op.toString}")
-    val array_addresses = lib.executePlan(bytes, Array(vectorAddress, anotherVectorAddress), 10)
-    read_arrow_arrays(array_addresses)
+    val planId = lib.createPlan(bytes)
+    for (i <- 0 to 10) {
+      println(s"i = $i")
+      val array_addresses = lib.executeExistingPlan(planId, Array(vectorAddress, anotherVectorAddress), 10)
+      read_arrow_arrays(array_addresses)
+    }
   }
 
 
