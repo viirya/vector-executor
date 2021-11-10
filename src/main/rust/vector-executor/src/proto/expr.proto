@@ -7,20 +7,10 @@ option java_package = "org.apache.spark.sql.execution.serde";
 
 // The basic message representing a Spark expression.
 message Expr {
-  ExprType expr_type = 1;
-
   oneof expr_struct {
     Literal literal = 2;
     Add add = 3;
     BoundReference bound = 4;
-  }
-
-  // What the expression is actually.
-  enum ExprType {
-    LITERAL = 0;
-    ADD = 1;
-    BOUND = 2;
-    // More expression types...
   }
 }
 

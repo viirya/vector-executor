@@ -55,22 +55,18 @@ object TestVector {
     val addBuilder = ExprOuterClass.Add.newBuilder()
     addBuilder.setLeft(
       ExprOuterClass.Expr.newBuilder()
-        .setExprType(ExprOuterClass.Expr.ExprType.BOUND)
         .setBound(ExprOuterClass.BoundReference.newBuilder().setIndex(0).build()))
     addBuilder.setRight(
       ExprOuterClass.Expr.newBuilder()
-        .setExprType(ExprOuterClass.Expr.ExprType.BOUND)
         .setBound(ExprOuterClass.BoundReference.newBuilder().setIndex(1).build()))
 
     val exprBuilder = ExprOuterClass.Expr.newBuilder()
-      .setExprType(ExprOuterClass.Expr.ExprType.ADD)
       .setAdd(addBuilder)
 
     val projectBuilder = OperatorOuterClass.Projection.newBuilder()
     projectBuilder.addProjectList(0, exprBuilder)
 
     val opBuilder = OperatorOuterClass.Operator.newBuilder()
-    opBuilder.setOpType(OperatorOuterClass.Operator.OperatorType.PROJECTION)
     opBuilder.setProjection(projectBuilder)
 
     val outputStream = new ByteArrayOutputStream()

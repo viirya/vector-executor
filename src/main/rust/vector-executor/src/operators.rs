@@ -25,10 +25,6 @@ pub enum ExecutionError {
     /// Error when deserializing an operator.
     #[error("Fail to deserialize to native operator with reason {0},")]
     DeserializeError(String),
-
-    /// Cannot find corresponding native operator
-    #[error("Fail to find native operator from serialized operator {0},")]
-    NativeOpNotFound(i32),
 }
 
 /// An vectorization operator

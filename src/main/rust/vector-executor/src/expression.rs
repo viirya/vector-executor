@@ -1,9 +1,7 @@
 //! Expressions.
 
-// use super::datatype::DataType;
 use super::functions::BuiltinScalarFunction;
 
-// use serde::{Deserialize, Serialize};
 use arrow::array::{ArrayRef, Int32Array};
 use arrow::datatypes::DataType;
 use arrow::datatypes::DataType::{Binary, Boolean, Float32, Float64, Int32, Int64, Utf8};
@@ -15,10 +13,6 @@ pub enum ExpressionError {
     #[allow(dead_code)]
     #[error("General expression error with reason {0}.")]
     GeneralError(String),
-
-    /// Cannot find corresponding native expression
-    #[error("Fail to find native expression from serialized expr {0},")]
-    NativeExprNotFound(i32),
 
     /// Deserializarion error
     #[error("Fail to deserialize to native expression with reason {0},")]

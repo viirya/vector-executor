@@ -1,22 +1,11 @@
 /// The basic message representing a Spark expression.
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Expr {
-    #[prost(enumeration="expr::ExprType", tag="1")]
-    pub expr_type: i32,
     #[prost(oneof="expr::ExprStruct", tags="2, 3, 4")]
     pub expr_struct: ::core::option::Option<expr::ExprStruct>,
 }
 /// Nested message and enum types in `Expr`.
 pub mod expr {
-    /// What the expression is actually.
-    #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
-    #[repr(i32)]
-    pub enum ExprType {
-        Literal = 0,
-        Add = 1,
-        /// More expression types...
-        Bound = 2,
-    }
     #[derive(Clone, PartialEq, ::prost::Oneof)]
     pub enum ExprStruct {
         #[prost(message, tag="2")]

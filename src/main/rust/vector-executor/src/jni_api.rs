@@ -1,7 +1,7 @@
 //! Define JNI APIs which can be called from Java/Scala.
 
 use jni::objects::{JClass, JString, ReleaseMode};
-use jni::sys::{jint, jlong, jlongArray, jbyteArray};
+use jni::sys::{jbyteArray, jint, jlong, jlongArray};
 use jni::JNIEnv;
 
 use arrow::ffi::ArrowArray;
@@ -144,23 +144,31 @@ pub extern "system" fn Java_org_viirya_vector_native_VectorLib_executePlan(
     addresses: jlongArray,
     num_row: jint,
 ) -> jlongArray {
-
     let num_arrays = env.get_array_length(addresses).unwrap() as usize;
-    let array_elements = env.get_long_array_elements(addresses, ReleaseMode::NoCopyBack).unwrap().as_ptr();
+    let array_elements = env
+        .get_long_array_elements(addresses, ReleaseMode::NoCopyBack)
+        .unwrap()
+        .as_ptr();
 
     let mut i: usize = 0;
     let mut inputs: Vec<ColumnarValue> = vec![];
     while i < num_arrays {
-        let array = ColumnarValue::Array(ArrayValues::IntColumnVector(unsafe {*(array_elements.add(i)) }, num_row as u32));
+        let array = ColumnarValue::Array(ArrayValues::IntColumnVector(
+            unsafe { *(array_elements.add(i)) },
+            num_row as u32,
+        ));
         inputs.push(array);
         i += 1;
     }
 
-    let bytes_elements = env.get_byte_array_elements(serialized_query, ReleaseMode::NoCopyBack).unwrap().as_ptr();
+    let bytes_elements = env
+        .get_byte_array_elements(serialized_query, ReleaseMode::NoCopyBack)
+        .unwrap()
+        .as_ptr();
     let mut encoded: Vec<u8> = vec![];
     i = 0;
     while i < env.get_array_length(serialized_query).unwrap() as usize {
-        let byte = unsafe {*(bytes_elements.add(i)) };
+        let byte = unsafe { *(bytes_elements.add(i)) };
         encoded.push(byte as u8);
         i += 1;
     }
@@ -175,9 +183,7 @@ pub extern "system" fn Java_org_viirya_vector_native_VectorLib_executePlan(
     let query_with_inputs = match query {
         Operator::Projection(exprs, child) => {
             let new_child = match *child {
-                Operator::Scan(arrays) if arrays.len() == 0 => {
-                   Operator::Scan(inputs)
-                },
+                Operator::Scan(arrays) if arrays.len() == 0 => Operator::Scan(inputs),
                 _ => *child,
             };
             Operator::Projection(exprs, Box::new(new_child))

@@ -48,7 +48,6 @@ impl ToProto<spark_expression::Expr> for expression::Expr {
                         ));
 
                         Ok(spark_expression::Expr {
-                            expr_type: 1,
                             expr_struct: Some(add_struct),
                         })
                     }
@@ -100,84 +99,58 @@ impl Serde<expression::ExpressionError, expression::Expr> for spark_expression::
     }
 
     fn to_native(self: &Self) -> Result<expression::Expr, expression::ExpressionError> {
-        match spark_expression::expr::ExprType::from_i32(self.expr_type) {
-            Some(spark_expression::expr::ExprType::Add) => match self.expr_struct.as_ref().unwrap()
-            {
-                spark_expression::expr::ExprStruct::Add(add) => {
-                    let left = add.left.as_ref().unwrap().to_native().unwrap();
-                    let right = add.right.as_ref().unwrap().to_native().unwrap();
+        match self.expr_struct.as_ref().unwrap() {
+            spark_expression::expr::ExprStruct::Add(add) => {
+                let left = add.left.as_ref().unwrap().to_native().unwrap();
+                let right = add.right.as_ref().unwrap().to_native().unwrap();
 
-                    Ok(functions::add(left.clone(), right.clone()))
-                }
-                other => Err(expression::ExpressionError::DeserializeError(format!(
-                    "Add message type shouldn't have {:?} expr!",
-                    other
-                ))),
-            },
-            Some(spark_expression::expr::ExprType::Literal) => {
-                match self.expr_struct.as_ref().unwrap() {
-                    spark_expression::expr::ExprStruct::Literal(spark_expression::Literal {
-                        value,
-                    }) => match value {
-                        Some(spark_expression::literal::Value::IntVal(i)) => Ok(
-                            expression::Expr::Literal(expression::ColumnarValue::Scalar(
-                                expression::LiteralValue::Int32(*i),
-                            )),
-                        ),
-                        Some(spark_expression::literal::Value::LongVal(l)) => Ok(
-                            expression::Expr::Literal(expression::ColumnarValue::Scalar(
-                                expression::LiteralValue::Int64(*l),
-                            )),
-                        ),
-                        Some(spark_expression::literal::Value::FloatVal(f)) => Ok(
-                            expression::Expr::Literal(expression::ColumnarValue::Scalar(
-                                expression::LiteralValue::Float(*f),
-                            )),
-                        ),
-                        Some(spark_expression::literal::Value::DoubleVal(d)) => Ok(
-                            expression::Expr::Literal(expression::ColumnarValue::Scalar(
-                                expression::LiteralValue::Double(*d),
-                            )),
-                        ),
-                        Some(spark_expression::literal::Value::StringVal(s)) => Ok(
-                            expression::Expr::Literal(expression::ColumnarValue::Scalar(
-                                expression::LiteralValue::String(s.clone()),
-                            )),
-                        ),
-                        Some(spark_expression::literal::Value::BytesVal(b)) => Ok(
-                            expression::Expr::Literal(expression::ColumnarValue::Scalar(
-                                expression::LiteralValue::Bytes(b.clone()),
-                            )),
-                        ),
-                        Some(spark_expression::literal::Value::BoolVal(b)) => Ok(
-                            expression::Expr::Literal(expression::ColumnarValue::Scalar(
-                                expression::LiteralValue::Bool(*b),
-                            )),
-                        ),
-                        None => Err(expression::ExpressionError::GeneralError(format!(
-                            "Literal message type shouldn't have empty value!"
-                        ))),
-                    },
-                    other => Err(expression::ExpressionError::DeserializeError(format!(
-                        "Literal message type shouldn't have {:?} expr!",
-                        other
-                    ))),
-                }
+                Ok(functions::add(left.clone(), right.clone()))
             }
-            Some(spark_expression::expr::ExprType::Bound) => {
-                match self.expr_struct.as_ref().unwrap() {
-                    spark_expression::expr::ExprStruct::Bound(bound) => {
-                        Ok(expression::Expr::BoundReference(bound.index as usize))
+            spark_expression::expr::ExprStruct::Literal(spark_expression::Literal { value }) => {
+                match value {
+                    Some(spark_expression::literal::Value::IntVal(i)) => {
+                        Ok(expression::Expr::Literal(
+                            expression::ColumnarValue::Scalar(expression::LiteralValue::Int32(*i)),
+                        ))
                     }
-                    other => Err(expression::ExpressionError::DeserializeError(format!(
-                        "Bound message type shouldn't have {:?} expr!",
-                        other
+                    Some(spark_expression::literal::Value::LongVal(l)) => {
+                        Ok(expression::Expr::Literal(
+                            expression::ColumnarValue::Scalar(expression::LiteralValue::Int64(*l)),
+                        ))
+                    }
+                    Some(spark_expression::literal::Value::FloatVal(f)) => {
+                        Ok(expression::Expr::Literal(
+                            expression::ColumnarValue::Scalar(expression::LiteralValue::Float(*f)),
+                        ))
+                    }
+                    Some(spark_expression::literal::Value::DoubleVal(d)) => {
+                        Ok(expression::Expr::Literal(
+                            expression::ColumnarValue::Scalar(expression::LiteralValue::Double(*d)),
+                        ))
+                    }
+                    Some(spark_expression::literal::Value::StringVal(s)) => Ok(
+                        expression::Expr::Literal(expression::ColumnarValue::Scalar(
+                            expression::LiteralValue::String(s.clone()),
+                        )),
+                    ),
+                    Some(spark_expression::literal::Value::BytesVal(b)) => Ok(
+                        expression::Expr::Literal(expression::ColumnarValue::Scalar(
+                            expression::LiteralValue::Bytes(b.clone()),
+                        )),
+                    ),
+                    Some(spark_expression::literal::Value::BoolVal(b)) => {
+                        Ok(expression::Expr::Literal(
+                            expression::ColumnarValue::Scalar(expression::LiteralValue::Bool(*b)),
+                        ))
+                    }
+                    None => Err(expression::ExpressionError::GeneralError(format!(
+                        "Literal message type shouldn't have empty value!"
                     ))),
                 }
             }
-            None => Err(expression::ExpressionError::NativeExprNotFound(
-                self.expr_type as i32,
-            )),
+            spark_expression::expr::ExprStruct::Bound(bound) => {
+                Ok(expression::Expr::BoundReference(bound.index as usize))
+            }
         }
     }
 }
@@ -192,31 +165,26 @@ impl Serde<ExecutionError, Operator> for spark_operator::Operator {
     }
 
     fn to_native(self: &Self) -> Result<Operator, ExecutionError> {
-        match spark_operator::operator::OperatorType::from_i32(self.op_type) {
-            Some(spark_operator::operator::OperatorType::Projection) => {
-                match self.op_struct.as_ref().unwrap() {
-                    spark_operator::operator::OpStruct::Projection(project) => {
-                        let project_list = project
-                            .project_list
-                            .iter()
-                            .map(|expr| expr.to_native().unwrap())
-                            .collect::<Vec<expression::Expr>>();
+        match self.op_struct.as_ref().unwrap() {
+            spark_operator::operator::OpStruct::Projection(project) => {
+                let project_list = project
+                    .project_list
+                    .iter()
+                    .map(|expr| expr.to_native().unwrap())
+                    .collect::<Vec<expression::Expr>>();
 
-                        // We don't serialize leaf operator from Spark. Once there is empty child node for a serialized
-                        // operator, it takes array batch from Spark.
-                        // todo: put actual array batch.
-                        let child = project
-                            .child
-                            .as_ref()
-                            .map(|c| c.to_native())
-                            .unwrap_or_else(|| Ok(Operator::Scan(vec![])))
-                            .unwrap();
+                // We don't serialize leaf operator from Spark. Once there is empty child node for a serialized
+                // operator, it takes array batch from Spark.
+                // todo: put actual array batch.
+                let child = project
+                    .child
+                    .as_ref()
+                    .map(|c| c.to_native())
+                    .unwrap_or_else(|| Ok(Operator::Scan(vec![])))
+                    .unwrap();
 
-                        Ok(Operator::Projection(project_list, Box::new(child)))
-                    }
-                }
+                Ok(Operator::Projection(project_list, Box::new(child)))
             }
-            None => Err(ExecutionError::NativeOpNotFound(self.op_type as i32)),
         }
     }
 }
@@ -231,19 +199,8 @@ mod tests {
     use crate::spark_operator;
 
     #[test]
-    fn basic() {
-        let mut default_expr = spark_expression::Expr::default();
-        default_expr.set_expr_type(spark_expression::expr::ExprType::Add);
-        assert_eq!(
-            default_expr.expr_type,
-            spark_expression::expr::ExprType::Add as i32
-        );
-    }
-
-    #[test]
     fn ser_de() {
-        let mut expr = spark_expression::Expr::default();
-        expr.set_expr_type(spark_expression::expr::ExprType::Add);
+        let expr = spark_expression::Expr::default();
 
         let encoded = expr.serialize();
         let decoded = deserialize_expr(&encoded.as_slice());
@@ -254,17 +211,14 @@ mod tests {
     #[test]
     fn to_native_expr() {
         let mut expr = spark_expression::Expr::default();
-        expr.set_expr_type(spark_expression::expr::ExprType::Add);
 
         let mut literal1 = spark_expression::Expr::default();
-        literal1.set_expr_type(spark_expression::expr::ExprType::Literal);
         literal1.expr_struct = Some(spark_expression::expr::ExprStruct::Literal(
             spark_expression::Literal {
                 value: Some(spark_expression::literal::Value::IntVal(1)),
             },
         ));
         let mut literal2 = spark_expression::Expr::default();
-        literal2.set_expr_type(spark_expression::expr::ExprType::Literal);
         literal2.expr_struct = Some(spark_expression::expr::ExprStruct::Literal(
             spark_expression::Literal {
                 value: Some(spark_expression::literal::Value::IntVal(1)),
@@ -294,7 +248,6 @@ mod tests {
     #[test]
     fn to_native_operator() {
         let mut op = spark_operator::Operator::default();
-        op.set_op_type(spark_operator::operator::OperatorType::Projection);
         op.op_struct = Some(spark_operator::operator::OpStruct::Projection(Box::new(
             spark_operator::Projection {
                 project_list: vec![],

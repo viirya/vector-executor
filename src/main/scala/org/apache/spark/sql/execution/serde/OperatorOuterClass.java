@@ -19,17 +19,6 @@ public final class OperatorOuterClass {
       com.google.protobuf.MessageOrBuilder {
 
     /**
-     * <code>.spark.spark_operator.Operator.OperatorType op_type = 1;</code>
-     * @return The enum numeric value on the wire for opType.
-     */
-    int getOpTypeValue();
-    /**
-     * <code>.spark.spark_operator.Operator.OperatorType op_type = 1;</code>
-     * @return The opType.
-     */
-    org.apache.spark.sql.execution.serde.OperatorOuterClass.Operator.OperatorType getOpType();
-
-    /**
      * <code>.spark.spark_operator.Projection projection = 2;</code>
      * @return Whether the projection field is set.
      */
@@ -63,7 +52,6 @@ public final class OperatorOuterClass {
       super(builder);
     }
     private Operator() {
-      opType_ = 0;
     }
 
     @java.lang.Override
@@ -96,12 +84,6 @@ public final class OperatorOuterClass {
             case 0:
               done = true;
               break;
-            case 8: {
-              int rawValue = input.readEnum();
-
-              opType_ = rawValue;
-              break;
-            }
             case 18: {
               org.apache.spark.sql.execution.serde.OperatorOuterClass.Projection.Builder subBuilder = null;
               if (opStructCase_ == 2) {
@@ -148,117 +130,6 @@ public final class OperatorOuterClass {
               org.apache.spark.sql.execution.serde.OperatorOuterClass.Operator.class, org.apache.spark.sql.execution.serde.OperatorOuterClass.Operator.Builder.class);
     }
 
-    /**
-     * <pre>
-     * What the operator is actually.
-     * </pre>
-     *
-     * Protobuf enum {@code spark.spark_operator.Operator.OperatorType}
-     */
-    public enum OperatorType
-        implements com.google.protobuf.ProtocolMessageEnum {
-      /**
-       * <pre>
-       * More operator types...
-       * </pre>
-       *
-       * <code>PROJECTION = 0;</code>
-       */
-      PROJECTION(0),
-      UNRECOGNIZED(-1),
-      ;
-
-      /**
-       * <pre>
-       * More operator types...
-       * </pre>
-       *
-       * <code>PROJECTION = 0;</code>
-       */
-      public static final int PROJECTION_VALUE = 0;
-
-
-      public final int getNumber() {
-        if (this == UNRECOGNIZED) {
-          throw new java.lang.IllegalArgumentException(
-              "Can't get the number of an unknown enum value.");
-        }
-        return value;
-      }
-
-      /**
-       * @param value The numeric wire value of the corresponding enum entry.
-       * @return The enum associated with the given numeric wire value.
-       * @deprecated Use {@link #forNumber(int)} instead.
-       */
-      @java.lang.Deprecated
-      public static OperatorType valueOf(int value) {
-        return forNumber(value);
-      }
-
-      /**
-       * @param value The numeric wire value of the corresponding enum entry.
-       * @return The enum associated with the given numeric wire value.
-       */
-      public static OperatorType forNumber(int value) {
-        switch (value) {
-          case 0: return PROJECTION;
-          default: return null;
-        }
-      }
-
-      public static com.google.protobuf.Internal.EnumLiteMap<OperatorType>
-          internalGetValueMap() {
-        return internalValueMap;
-      }
-      private static final com.google.protobuf.Internal.EnumLiteMap<
-          OperatorType> internalValueMap =
-            new com.google.protobuf.Internal.EnumLiteMap<OperatorType>() {
-              public OperatorType findValueByNumber(int number) {
-                return OperatorType.forNumber(number);
-              }
-            };
-
-      public final com.google.protobuf.Descriptors.EnumValueDescriptor
-          getValueDescriptor() {
-        if (this == UNRECOGNIZED) {
-          throw new java.lang.IllegalStateException(
-              "Can't get the descriptor of an unrecognized enum value.");
-        }
-        return getDescriptor().getValues().get(ordinal());
-      }
-      public final com.google.protobuf.Descriptors.EnumDescriptor
-          getDescriptorForType() {
-        return getDescriptor();
-      }
-      public static final com.google.protobuf.Descriptors.EnumDescriptor
-          getDescriptor() {
-        return org.apache.spark.sql.execution.serde.OperatorOuterClass.Operator.getDescriptor().getEnumTypes().get(0);
-      }
-
-      private static final OperatorType[] VALUES = values();
-
-      public static OperatorType valueOf(
-          com.google.protobuf.Descriptors.EnumValueDescriptor desc) {
-        if (desc.getType() != getDescriptor()) {
-          throw new java.lang.IllegalArgumentException(
-            "EnumValueDescriptor is not for this type.");
-        }
-        if (desc.getIndex() == -1) {
-          return UNRECOGNIZED;
-        }
-        return VALUES[desc.getIndex()];
-      }
-
-      private final int value;
-
-      private OperatorType(int value) {
-        this.value = value;
-      }
-
-      // @@protoc_insertion_point(enum_scope:spark.spark_operator.Operator.OperatorType)
-    }
-
     private int opStructCase_ = 0;
     private java.lang.Object opStruct_;
     public enum OpStructCase
@@ -296,25 +167,6 @@ public final class OperatorOuterClass {
     getOpStructCase() {
       return OpStructCase.forNumber(
           opStructCase_);
-    }
-
-    public static final int OP_TYPE_FIELD_NUMBER = 1;
-    private int opType_;
-    /**
-     * <code>.spark.spark_operator.Operator.OperatorType op_type = 1;</code>
-     * @return The enum numeric value on the wire for opType.
-     */
-    @java.lang.Override public int getOpTypeValue() {
-      return opType_;
-    }
-    /**
-     * <code>.spark.spark_operator.Operator.OperatorType op_type = 1;</code>
-     * @return The opType.
-     */
-    @java.lang.Override public org.apache.spark.sql.execution.serde.OperatorOuterClass.Operator.OperatorType getOpType() {
-      @SuppressWarnings("deprecation")
-      org.apache.spark.sql.execution.serde.OperatorOuterClass.Operator.OperatorType result = org.apache.spark.sql.execution.serde.OperatorOuterClass.Operator.OperatorType.valueOf(opType_);
-      return result == null ? org.apache.spark.sql.execution.serde.OperatorOuterClass.Operator.OperatorType.UNRECOGNIZED : result;
     }
 
     public static final int PROJECTION_FIELD_NUMBER = 2;
@@ -362,9 +214,6 @@ public final class OperatorOuterClass {
     @java.lang.Override
     public void writeTo(com.google.protobuf.CodedOutputStream output)
                         throws java.io.IOException {
-      if (opType_ != org.apache.spark.sql.execution.serde.OperatorOuterClass.Operator.OperatorType.PROJECTION.getNumber()) {
-        output.writeEnum(1, opType_);
-      }
       if (opStructCase_ == 2) {
         output.writeMessage(2, (org.apache.spark.sql.execution.serde.OperatorOuterClass.Projection) opStruct_);
       }
@@ -377,10 +226,6 @@ public final class OperatorOuterClass {
       if (size != -1) return size;
 
       size = 0;
-      if (opType_ != org.apache.spark.sql.execution.serde.OperatorOuterClass.Operator.OperatorType.PROJECTION.getNumber()) {
-        size += com.google.protobuf.CodedOutputStream
-          .computeEnumSize(1, opType_);
-      }
       if (opStructCase_ == 2) {
         size += com.google.protobuf.CodedOutputStream
           .computeMessageSize(2, (org.apache.spark.sql.execution.serde.OperatorOuterClass.Projection) opStruct_);
@@ -400,7 +245,6 @@ public final class OperatorOuterClass {
       }
       org.apache.spark.sql.execution.serde.OperatorOuterClass.Operator other = (org.apache.spark.sql.execution.serde.OperatorOuterClass.Operator) obj;
 
-      if (opType_ != other.opType_) return false;
       if (!getOpStructCase().equals(other.getOpStructCase())) return false;
       switch (opStructCase_) {
         case 2:
@@ -421,8 +265,6 @@ public final class OperatorOuterClass {
       }
       int hash = 41;
       hash = (19 * hash) + getDescriptor().hashCode();
-      hash = (37 * hash) + OP_TYPE_FIELD_NUMBER;
-      hash = (53 * hash) + opType_;
       switch (opStructCase_) {
         case 2:
           hash = (37 * hash) + PROJECTION_FIELD_NUMBER;
@@ -568,8 +410,6 @@ public final class OperatorOuterClass {
       @java.lang.Override
       public Builder clear() {
         super.clear();
-        opType_ = 0;
-
         opStructCase_ = 0;
         opStruct_ = null;
         return this;
@@ -598,7 +438,6 @@ public final class OperatorOuterClass {
       @java.lang.Override
       public org.apache.spark.sql.execution.serde.OperatorOuterClass.Operator buildPartial() {
         org.apache.spark.sql.execution.serde.OperatorOuterClass.Operator result = new org.apache.spark.sql.execution.serde.OperatorOuterClass.Operator(this);
-        result.opType_ = opType_;
         if (opStructCase_ == 2) {
           if (projectionBuilder_ == null) {
             result.opStruct_ = opStruct_;
@@ -655,9 +494,6 @@ public final class OperatorOuterClass {
 
       public Builder mergeFrom(org.apache.spark.sql.execution.serde.OperatorOuterClass.Operator other) {
         if (other == org.apache.spark.sql.execution.serde.OperatorOuterClass.Operator.getDefaultInstance()) return this;
-        if (other.opType_ != 0) {
-          setOpTypeValue(other.getOpTypeValue());
-        }
         switch (other.getOpStructCase()) {
           case PROJECTION: {
             mergeProjection(other.getProjection());
@@ -710,60 +546,6 @@ public final class OperatorOuterClass {
         return this;
       }
 
-
-      private int opType_ = 0;
-      /**
-       * <code>.spark.spark_operator.Operator.OperatorType op_type = 1;</code>
-       * @return The enum numeric value on the wire for opType.
-       */
-      @java.lang.Override public int getOpTypeValue() {
-        return opType_;
-      }
-      /**
-       * <code>.spark.spark_operator.Operator.OperatorType op_type = 1;</code>
-       * @param value The enum numeric value on the wire for opType to set.
-       * @return This builder for chaining.
-       */
-      public Builder setOpTypeValue(int value) {
-        
-        opType_ = value;
-        onChanged();
-        return this;
-      }
-      /**
-       * <code>.spark.spark_operator.Operator.OperatorType op_type = 1;</code>
-       * @return The opType.
-       */
-      @java.lang.Override
-      public org.apache.spark.sql.execution.serde.OperatorOuterClass.Operator.OperatorType getOpType() {
-        @SuppressWarnings("deprecation")
-        org.apache.spark.sql.execution.serde.OperatorOuterClass.Operator.OperatorType result = org.apache.spark.sql.execution.serde.OperatorOuterClass.Operator.OperatorType.valueOf(opType_);
-        return result == null ? org.apache.spark.sql.execution.serde.OperatorOuterClass.Operator.OperatorType.UNRECOGNIZED : result;
-      }
-      /**
-       * <code>.spark.spark_operator.Operator.OperatorType op_type = 1;</code>
-       * @param value The opType to set.
-       * @return This builder for chaining.
-       */
-      public Builder setOpType(org.apache.spark.sql.execution.serde.OperatorOuterClass.Operator.OperatorType value) {
-        if (value == null) {
-          throw new NullPointerException();
-        }
-        
-        opType_ = value.getNumber();
-        onChanged();
-        return this;
-      }
-      /**
-       * <code>.spark.spark_operator.Operator.OperatorType op_type = 1;</code>
-       * @return This builder for chaining.
-       */
-      public Builder clearOpType() {
-        
-        opType_ = 0;
-        onChanged();
-        return this;
-      }
 
       private com.google.protobuf.SingleFieldBuilderV3<
           org.apache.spark.sql.execution.serde.OperatorOuterClass.Projection, org.apache.spark.sql.execution.serde.OperatorOuterClass.Projection.Builder, org.apache.spark.sql.execution.serde.OperatorOuterClass.ProjectionOrBuilder> projectionBuilder_;
@@ -1974,16 +1756,13 @@ public final class OperatorOuterClass {
   static {
     java.lang.String[] descriptorData = {
       "\n\030src/proto/operator.proto\022\024spark.spark_" +
-      "operator\032\024src/proto/expr.proto\"\255\001\n\010Opera" +
-      "tor\022<\n\007op_type\030\001 \001(\0162+.spark.spark_opera" +
-      "tor.Operator.OperatorType\0226\n\nprojection\030" +
-      "\002 \001(\0132 .spark.spark_operator.ProjectionH" +
-      "\000\"\036\n\014OperatorType\022\016\n\nPROJECTION\020\000B\013\n\top_" +
-      "struct\"o\n\nProjection\0222\n\014project_list\030\001 \003" +
-      "(\0132\034.spark.spark_expression.Expr\022-\n\005chil" +
-      "d\030\002 \001(\0132\036.spark.spark_operator.OperatorB" +
-      "&\n$org.apache.spark.sql.execution.serdeb" +
-      "\006proto3"
+      "operator\032\024src/proto/expr.proto\"O\n\010Operat" +
+      "or\0226\n\nprojection\030\002 \001(\0132 .spark.spark_ope" +
+      "rator.ProjectionH\000B\013\n\top_struct\"o\n\nProje" +
+      "ction\0222\n\014project_list\030\001 \003(\0132\034.spark.spar" +
+      "k_expression.Expr\022-\n\005child\030\002 \001(\0132\036.spark" +
+      ".spark_operator.OperatorB&\n$org.apache.s" +
+      "park.sql.execution.serdeb\006proto3"
     };
     descriptor = com.google.protobuf.Descriptors.FileDescriptor
       .internalBuildGeneratedFileFrom(descriptorData,
@@ -1995,7 +1774,7 @@ public final class OperatorOuterClass {
     internal_static_spark_spark_operator_Operator_fieldAccessorTable = new
       com.google.protobuf.GeneratedMessageV3.FieldAccessorTable(
         internal_static_spark_spark_operator_Operator_descriptor,
-        new java.lang.String[] { "OpType", "Projection", "OpStruct", });
+        new java.lang.String[] { "Projection", "OpStruct", });
     internal_static_spark_spark_operator_Projection_descriptor =
       getDescriptor().getMessageTypes().get(1);
     internal_static_spark_spark_operator_Projection_fieldAccessorTable = new

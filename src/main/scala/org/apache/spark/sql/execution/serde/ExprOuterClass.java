@@ -19,17 +19,6 @@ public final class ExprOuterClass {
       com.google.protobuf.MessageOrBuilder {
 
     /**
-     * <code>.spark.spark_expression.Expr.ExprType expr_type = 1;</code>
-     * @return The enum numeric value on the wire for exprType.
-     */
-    int getExprTypeValue();
-    /**
-     * <code>.spark.spark_expression.Expr.ExprType expr_type = 1;</code>
-     * @return The exprType.
-     */
-    org.apache.spark.sql.execution.serde.ExprOuterClass.Expr.ExprType getExprType();
-
-    /**
      * <code>.spark.spark_expression.Literal literal = 2;</code>
      * @return Whether the literal field is set.
      */
@@ -93,7 +82,6 @@ public final class ExprOuterClass {
       super(builder);
     }
     private Expr() {
-      exprType_ = 0;
     }
 
     @java.lang.Override
@@ -126,12 +114,6 @@ public final class ExprOuterClass {
             case 0:
               done = true;
               break;
-            case 8: {
-              int rawValue = input.readEnum();
-
-              exprType_ = rawValue;
-              break;
-            }
             case 18: {
               org.apache.spark.sql.execution.serde.ExprOuterClass.Literal.Builder subBuilder = null;
               if (exprStructCase_ == 2) {
@@ -206,135 +188,6 @@ public final class ExprOuterClass {
               org.apache.spark.sql.execution.serde.ExprOuterClass.Expr.class, org.apache.spark.sql.execution.serde.ExprOuterClass.Expr.Builder.class);
     }
 
-    /**
-     * <pre>
-     * What the expression is actually.
-     * </pre>
-     *
-     * Protobuf enum {@code spark.spark_expression.Expr.ExprType}
-     */
-    public enum ExprType
-        implements com.google.protobuf.ProtocolMessageEnum {
-      /**
-       * <code>LITERAL = 0;</code>
-       */
-      LITERAL(0),
-      /**
-       * <code>ADD = 1;</code>
-       */
-      ADD(1),
-      /**
-       * <pre>
-       * More expression types...
-       * </pre>
-       *
-       * <code>BOUND = 2;</code>
-       */
-      BOUND(2),
-      UNRECOGNIZED(-1),
-      ;
-
-      /**
-       * <code>LITERAL = 0;</code>
-       */
-      public static final int LITERAL_VALUE = 0;
-      /**
-       * <code>ADD = 1;</code>
-       */
-      public static final int ADD_VALUE = 1;
-      /**
-       * <pre>
-       * More expression types...
-       * </pre>
-       *
-       * <code>BOUND = 2;</code>
-       */
-      public static final int BOUND_VALUE = 2;
-
-
-      public final int getNumber() {
-        if (this == UNRECOGNIZED) {
-          throw new java.lang.IllegalArgumentException(
-              "Can't get the number of an unknown enum value.");
-        }
-        return value;
-      }
-
-      /**
-       * @param value The numeric wire value of the corresponding enum entry.
-       * @return The enum associated with the given numeric wire value.
-       * @deprecated Use {@link #forNumber(int)} instead.
-       */
-      @java.lang.Deprecated
-      public static ExprType valueOf(int value) {
-        return forNumber(value);
-      }
-
-      /**
-       * @param value The numeric wire value of the corresponding enum entry.
-       * @return The enum associated with the given numeric wire value.
-       */
-      public static ExprType forNumber(int value) {
-        switch (value) {
-          case 0: return LITERAL;
-          case 1: return ADD;
-          case 2: return BOUND;
-          default: return null;
-        }
-      }
-
-      public static com.google.protobuf.Internal.EnumLiteMap<ExprType>
-          internalGetValueMap() {
-        return internalValueMap;
-      }
-      private static final com.google.protobuf.Internal.EnumLiteMap<
-          ExprType> internalValueMap =
-            new com.google.protobuf.Internal.EnumLiteMap<ExprType>() {
-              public ExprType findValueByNumber(int number) {
-                return ExprType.forNumber(number);
-              }
-            };
-
-      public final com.google.protobuf.Descriptors.EnumValueDescriptor
-          getValueDescriptor() {
-        if (this == UNRECOGNIZED) {
-          throw new java.lang.IllegalStateException(
-              "Can't get the descriptor of an unrecognized enum value.");
-        }
-        return getDescriptor().getValues().get(ordinal());
-      }
-      public final com.google.protobuf.Descriptors.EnumDescriptor
-          getDescriptorForType() {
-        return getDescriptor();
-      }
-      public static final com.google.protobuf.Descriptors.EnumDescriptor
-          getDescriptor() {
-        return org.apache.spark.sql.execution.serde.ExprOuterClass.Expr.getDescriptor().getEnumTypes().get(0);
-      }
-
-      private static final ExprType[] VALUES = values();
-
-      public static ExprType valueOf(
-          com.google.protobuf.Descriptors.EnumValueDescriptor desc) {
-        if (desc.getType() != getDescriptor()) {
-          throw new java.lang.IllegalArgumentException(
-            "EnumValueDescriptor is not for this type.");
-        }
-        if (desc.getIndex() == -1) {
-          return UNRECOGNIZED;
-        }
-        return VALUES[desc.getIndex()];
-      }
-
-      private final int value;
-
-      private ExprType(int value) {
-        this.value = value;
-      }
-
-      // @@protoc_insertion_point(enum_scope:spark.spark_expression.Expr.ExprType)
-    }
-
     private int exprStructCase_ = 0;
     private java.lang.Object exprStruct_;
     public enum ExprStructCase
@@ -376,25 +229,6 @@ public final class ExprOuterClass {
     getExprStructCase() {
       return ExprStructCase.forNumber(
           exprStructCase_);
-    }
-
-    public static final int EXPR_TYPE_FIELD_NUMBER = 1;
-    private int exprType_;
-    /**
-     * <code>.spark.spark_expression.Expr.ExprType expr_type = 1;</code>
-     * @return The enum numeric value on the wire for exprType.
-     */
-    @java.lang.Override public int getExprTypeValue() {
-      return exprType_;
-    }
-    /**
-     * <code>.spark.spark_expression.Expr.ExprType expr_type = 1;</code>
-     * @return The exprType.
-     */
-    @java.lang.Override public org.apache.spark.sql.execution.serde.ExprOuterClass.Expr.ExprType getExprType() {
-      @SuppressWarnings("deprecation")
-      org.apache.spark.sql.execution.serde.ExprOuterClass.Expr.ExprType result = org.apache.spark.sql.execution.serde.ExprOuterClass.Expr.ExprType.valueOf(exprType_);
-      return result == null ? org.apache.spark.sql.execution.serde.ExprOuterClass.Expr.ExprType.UNRECOGNIZED : result;
     }
 
     public static final int LITERAL_FIELD_NUMBER = 2;
@@ -504,9 +338,6 @@ public final class ExprOuterClass {
     @java.lang.Override
     public void writeTo(com.google.protobuf.CodedOutputStream output)
                         throws java.io.IOException {
-      if (exprType_ != org.apache.spark.sql.execution.serde.ExprOuterClass.Expr.ExprType.LITERAL.getNumber()) {
-        output.writeEnum(1, exprType_);
-      }
       if (exprStructCase_ == 2) {
         output.writeMessage(2, (org.apache.spark.sql.execution.serde.ExprOuterClass.Literal) exprStruct_);
       }
@@ -525,10 +356,6 @@ public final class ExprOuterClass {
       if (size != -1) return size;
 
       size = 0;
-      if (exprType_ != org.apache.spark.sql.execution.serde.ExprOuterClass.Expr.ExprType.LITERAL.getNumber()) {
-        size += com.google.protobuf.CodedOutputStream
-          .computeEnumSize(1, exprType_);
-      }
       if (exprStructCase_ == 2) {
         size += com.google.protobuf.CodedOutputStream
           .computeMessageSize(2, (org.apache.spark.sql.execution.serde.ExprOuterClass.Literal) exprStruct_);
@@ -556,7 +383,6 @@ public final class ExprOuterClass {
       }
       org.apache.spark.sql.execution.serde.ExprOuterClass.Expr other = (org.apache.spark.sql.execution.serde.ExprOuterClass.Expr) obj;
 
-      if (exprType_ != other.exprType_) return false;
       if (!getExprStructCase().equals(other.getExprStructCase())) return false;
       switch (exprStructCase_) {
         case 2:
@@ -585,8 +411,6 @@ public final class ExprOuterClass {
       }
       int hash = 41;
       hash = (19 * hash) + getDescriptor().hashCode();
-      hash = (37 * hash) + EXPR_TYPE_FIELD_NUMBER;
-      hash = (53 * hash) + exprType_;
       switch (exprStructCase_) {
         case 2:
           hash = (37 * hash) + LITERAL_FIELD_NUMBER;
@@ -740,8 +564,6 @@ public final class ExprOuterClass {
       @java.lang.Override
       public Builder clear() {
         super.clear();
-        exprType_ = 0;
-
         exprStructCase_ = 0;
         exprStruct_ = null;
         return this;
@@ -770,7 +592,6 @@ public final class ExprOuterClass {
       @java.lang.Override
       public org.apache.spark.sql.execution.serde.ExprOuterClass.Expr buildPartial() {
         org.apache.spark.sql.execution.serde.ExprOuterClass.Expr result = new org.apache.spark.sql.execution.serde.ExprOuterClass.Expr(this);
-        result.exprType_ = exprType_;
         if (exprStructCase_ == 2) {
           if (literalBuilder_ == null) {
             result.exprStruct_ = exprStruct_;
@@ -841,9 +662,6 @@ public final class ExprOuterClass {
 
       public Builder mergeFrom(org.apache.spark.sql.execution.serde.ExprOuterClass.Expr other) {
         if (other == org.apache.spark.sql.execution.serde.ExprOuterClass.Expr.getDefaultInstance()) return this;
-        if (other.exprType_ != 0) {
-          setExprTypeValue(other.getExprTypeValue());
-        }
         switch (other.getExprStructCase()) {
           case LITERAL: {
             mergeLiteral(other.getLiteral());
@@ -904,60 +722,6 @@ public final class ExprOuterClass {
         return this;
       }
 
-
-      private int exprType_ = 0;
-      /**
-       * <code>.spark.spark_expression.Expr.ExprType expr_type = 1;</code>
-       * @return The enum numeric value on the wire for exprType.
-       */
-      @java.lang.Override public int getExprTypeValue() {
-        return exprType_;
-      }
-      /**
-       * <code>.spark.spark_expression.Expr.ExprType expr_type = 1;</code>
-       * @param value The enum numeric value on the wire for exprType to set.
-       * @return This builder for chaining.
-       */
-      public Builder setExprTypeValue(int value) {
-        
-        exprType_ = value;
-        onChanged();
-        return this;
-      }
-      /**
-       * <code>.spark.spark_expression.Expr.ExprType expr_type = 1;</code>
-       * @return The exprType.
-       */
-      @java.lang.Override
-      public org.apache.spark.sql.execution.serde.ExprOuterClass.Expr.ExprType getExprType() {
-        @SuppressWarnings("deprecation")
-        org.apache.spark.sql.execution.serde.ExprOuterClass.Expr.ExprType result = org.apache.spark.sql.execution.serde.ExprOuterClass.Expr.ExprType.valueOf(exprType_);
-        return result == null ? org.apache.spark.sql.execution.serde.ExprOuterClass.Expr.ExprType.UNRECOGNIZED : result;
-      }
-      /**
-       * <code>.spark.spark_expression.Expr.ExprType expr_type = 1;</code>
-       * @param value The exprType to set.
-       * @return This builder for chaining.
-       */
-      public Builder setExprType(org.apache.spark.sql.execution.serde.ExprOuterClass.Expr.ExprType value) {
-        if (value == null) {
-          throw new NullPointerException();
-        }
-        
-        exprType_ = value.getNumber();
-        onChanged();
-        return this;
-      }
-      /**
-       * <code>.spark.spark_expression.Expr.ExprType expr_type = 1;</code>
-       * @return This builder for chaining.
-       */
-      public Builder clearExprType() {
-        
-        exprType_ = 0;
-        onChanged();
-        return this;
-      }
 
       private com.google.protobuf.SingleFieldBuilderV3<
           org.apache.spark.sql.execution.serde.ExprOuterClass.Literal, org.apache.spark.sql.execution.serde.ExprOuterClass.Literal.Builder, org.apache.spark.sql.execution.serde.ExprOuterClass.LiteralOrBuilder> literalBuilder_;
@@ -4103,22 +3867,20 @@ public final class ExprOuterClass {
   static {
     java.lang.String[] descriptorData = {
       "\n\024src/proto/expr.proto\022\026spark.spark_expr" +
-      "ession\"\225\002\n\004Expr\0228\n\texpr_type\030\001 \001(\0162%.spa" +
-      "rk.spark_expression.Expr.ExprType\0222\n\007lit" +
-      "eral\030\002 \001(\0132\037.spark.spark_expression.Lite" +
-      "ralH\000\022*\n\003add\030\003 \001(\0132\033.spark.spark_express" +
-      "ion.AddH\000\0227\n\005bound\030\004 \001(\0132&.spark.spark_e" +
-      "xpression.BoundReferenceH\000\"+\n\010ExprType\022\013" +
-      "\n\007LITERAL\020\000\022\007\n\003ADD\020\001\022\t\n\005BOUND\020\002B\r\n\013expr_" +
-      "struct\"\243\001\n\007Literal\022\022\n\010bool_val\030\001 \001(\010H\000\022\021" +
-      "\n\007int_val\030\002 \001(\005H\000\022\022\n\010long_val\030\003 \001(\003H\000\022\023\n" +
-      "\tfloat_val\030\004 \001(\002H\000\022\024\n\ndouble_val\030\005 \001(\001H\000" +
-      "\022\024\n\nstring_val\030\006 \001(\tH\000\022\023\n\tbytes_val\030\007 \001(" +
-      "\014H\000B\007\n\005value\"^\n\003Add\022*\n\004left\030\001 \001(\0132\034.spar" +
-      "k.spark_expression.Expr\022+\n\005right\030\002 \001(\0132\034" +
-      ".spark.spark_expression.Expr\"\037\n\016BoundRef" +
-      "erence\022\r\n\005index\030\001 \001(\005B&\n$org.apache.spar" +
-      "k.sql.execution.serdeb\006proto3"
+      "ession\"\256\001\n\004Expr\0222\n\007literal\030\002 \001(\0132\037.spark" +
+      ".spark_expression.LiteralH\000\022*\n\003add\030\003 \001(\013" +
+      "2\033.spark.spark_expression.AddH\000\0227\n\005bound" +
+      "\030\004 \001(\0132&.spark.spark_expression.BoundRef" +
+      "erenceH\000B\r\n\013expr_struct\"\243\001\n\007Literal\022\022\n\010b" +
+      "ool_val\030\001 \001(\010H\000\022\021\n\007int_val\030\002 \001(\005H\000\022\022\n\010lo" +
+      "ng_val\030\003 \001(\003H\000\022\023\n\tfloat_val\030\004 \001(\002H\000\022\024\n\nd" +
+      "ouble_val\030\005 \001(\001H\000\022\024\n\nstring_val\030\006 \001(\tH\000\022" +
+      "\023\n\tbytes_val\030\007 \001(\014H\000B\007\n\005value\"^\n\003Add\022*\n\004" +
+      "left\030\001 \001(\0132\034.spark.spark_expression.Expr" +
+      "\022+\n\005right\030\002 \001(\0132\034.spark.spark_expression" +
+      ".Expr\"\037\n\016BoundReference\022\r\n\005index\030\001 \001(\005B&" +
+      "\n$org.apache.spark.sql.execution.serdeb\006" +
+      "proto3"
     };
     descriptor = com.google.protobuf.Descriptors.FileDescriptor
       .internalBuildGeneratedFileFrom(descriptorData,
@@ -4129,7 +3891,7 @@ public final class ExprOuterClass {
     internal_static_spark_spark_expression_Expr_fieldAccessorTable = new
       com.google.protobuf.GeneratedMessageV3.FieldAccessorTable(
         internal_static_spark_spark_expression_Expr_descriptor,
-        new java.lang.String[] { "ExprType", "Literal", "Add", "Bound", "ExprStruct", });
+        new java.lang.String[] { "Literal", "Add", "Bound", "ExprStruct", });
     internal_static_spark_spark_expression_Literal_descriptor =
       getDescriptor().getMessageTypes().get(1);
     internal_static_spark_spark_expression_Literal_fieldAccessorTable = new
