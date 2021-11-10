@@ -3,7 +3,7 @@
 pub struct Expr {
     #[prost(enumeration="expr::ExprType", tag="1")]
     pub expr_type: i32,
-    #[prost(oneof="expr::ExprStruct", tags="2, 3")]
+    #[prost(oneof="expr::ExprStruct", tags="2, 3, 4")]
     pub expr_struct: ::core::option::Option<expr::ExprStruct>,
 }
 /// Nested message and enum types in `Expr`.
@@ -13,8 +13,9 @@ pub mod expr {
     #[repr(i32)]
     pub enum ExprType {
         Literal = 0,
-        /// More expression types...
         Add = 1,
+        /// More expression types...
+        Bound = 2,
     }
     #[derive(Clone, PartialEq, ::prost::Oneof)]
     pub enum ExprStruct {
@@ -22,6 +23,8 @@ pub mod expr {
         Literal(super::Literal),
         #[prost(message, tag="3")]
         Add(::prost::alloc::boxed::Box<super::Add>),
+        #[prost(message, tag="4")]
+        Bound(super::BoundReference),
     }
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -55,4 +58,10 @@ pub struct Add {
     pub left: ::core::option::Option<::prost::alloc::boxed::Box<Expr>>,
     #[prost(message, optional, boxed, tag="2")]
     pub right: ::core::option::Option<::prost::alloc::boxed::Box<Expr>>,
+}
+/// Bound to a particular vector array in input batch.
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct BoundReference {
+    #[prost(int32, tag="1")]
+    pub index: i32,
 }

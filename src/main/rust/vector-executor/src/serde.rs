@@ -25,8 +25,8 @@ impl From<prost::DecodeError> for ExecutionError {
 /// A trait to convert a native representation to its protobuf one.
 /// P is the protobuf type.
 pub trait ToProto<P> {
-   /// Convert to protobuf type P.
-   fn to_proto(self: &Self) -> Result<P, Error>;
+    /// Convert to protobuf type P.
+    fn to_proto(self: &Self) -> Result<P, Error>;
 }
 
 /// Convert expression::Expr to spark_expression::Expr.
@@ -34,25 +34,30 @@ impl ToProto<spark_expression::Expr> for expression::Expr {
     fn to_proto(self: &Self) -> Result<spark_expression::Expr, Error> {
         match self {
             expression::Expr::ScalarFunction { func, args } => {
-                let proto_args = args.into_iter().map(|e| {
-                    e.to_proto().unwrap()
-                }).collect::<Vec<_>>();
+                let proto_args = args
+                    .into_iter()
+                    .map(|e| e.to_proto().unwrap())
+                    .collect::<Vec<_>>();
                 match func {
-                   functions::BuiltinScalarFunction::Add => {
-                       let add_struct = spark_expression::expr::ExprStruct::Add(Box::new(spark_expression::Add {
-                           left: Some(Box::new(proto_args.get(0).unwrap().clone())),
-                           right: Some(Box::new(proto_args.get(1).unwrap().clone())),
-                       }));
+                    functions::BuiltinScalarFunction::Add => {
+                        let add_struct = spark_expression::expr::ExprStruct::Add(Box::new(
+                            spark_expression::Add {
+                                left: Some(Box::new(proto_args.get(0).unwrap().clone())),
+                                right: Some(Box::new(proto_args.get(1).unwrap().clone())),
+                            },
+                        ));
 
-                       Ok(spark_expression::Expr { expr_type: 1, expr_struct: Some(add_struct) })
-                   },
+                        Ok(spark_expression::Expr {
+                            expr_type: 1,
+                            expr_struct: Some(add_struct),
+                        })
+                    }
                 }
-            },
+            }
             _ => Ok(spark_expression::Expr::default()),
         }
     }
 }
-
 
 /// Deserialize bytes to protobuf type of expression
 pub fn deserialize_expr(buf: &[u8]) -> Result<spark_expression::Expr, expression::ExpressionError> {
@@ -159,6 +164,17 @@ impl Serde<expression::ExpressionError, expression::Expr> for spark_expression::
                     ))),
                 }
             }
+            Some(spark_expression::expr::ExprType::Bound) => {
+                match self.expr_struct.as_ref().unwrap() {
+                    spark_expression::expr::ExprStruct::Bound(bound) => {
+                        Ok(expression::Expr::BoundReference(bound.index as usize))
+                    }
+                    other => Err(expression::ExpressionError::DeserializeError(format!(
+                        "Bound message type shouldn't have {:?} expr!",
+                        other
+                    ))),
+                }
+            }
             None => Err(expression::ExpressionError::NativeExprNotFound(
                 self.expr_type as i32,
             )),
@@ -208,9 +224,9 @@ impl Serde<ExecutionError, Operator> for spark_operator::Operator {
 #[cfg(test)]
 mod tests {
     use crate::expression;
-    use crate::operators;
     use crate::functions;
-    use crate::serde::{Serde, deserialize_expr, deserialize_op};
+    use crate::operators;
+    use crate::serde::{deserialize_expr, deserialize_op, Serde};
     use crate::spark_expression;
     use crate::spark_operator;
 
@@ -263,7 +279,11 @@ mod tests {
         )));
 
         let encoded = expr.serialize();
-        match deserialize_expr(&encoded.as_slice()).unwrap().to_native().unwrap() {
+        match deserialize_expr(&encoded.as_slice())
+            .unwrap()
+            .to_native()
+            .unwrap()
+        {
             expression::Expr::ScalarFunction { func, .. } => {
                 assert_eq!(func, functions::BuiltinScalarFunction::Add)
             }
@@ -283,7 +303,11 @@ mod tests {
         )));
 
         let encoded = op.serialize();
-        match deserialize_op(&encoded.as_slice()).unwrap().to_native().unwrap() {
+        match deserialize_op(&encoded.as_slice())
+            .unwrap()
+            .to_native()
+            .unwrap()
+        {
             operators::Operator::Projection(project_list, child) => {
                 assert_eq!(project_list.len(), 0);
                 match child.as_ref() {

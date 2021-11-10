@@ -3,7 +3,7 @@ syntax = "proto3";
 
 package spark.spark_expression;
 
-option java_package = "org.apache.spark.sql.execution.native.ser";
+option java_package = "org.apache.spark.sql.execution.serde";
 
 // The basic message representing a Spark expression.
 message Expr {
@@ -12,12 +12,14 @@ message Expr {
   oneof expr_struct {
     Literal literal = 2;
     Add add = 3;
+    BoundReference bound = 4;
   }
 
   // What the expression is actually.
   enum ExprType {
     LITERAL = 0;
     ADD = 1;
+    BOUND = 2;
     // More expression types...
   }
 }
@@ -37,4 +39,9 @@ message Literal {
 message Add {
   Expr left = 1;
   Expr right = 2;
+}
+
+// Bound to a particular vector array in input batch.
+message BoundReference {
+  int32 index = 1;
 }

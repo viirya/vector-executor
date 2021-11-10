@@ -1,5 +1,7 @@
 package org.viirya.vector.bin
 
+import java.io.ByteArrayOutputStream
+
 import org.apache.arrow.ffi.FFI
 import org.apache.arrow.ffi.ArrowArray
 import org.apache.arrow.ffi.ArrowSchema
@@ -9,6 +11,7 @@ import org.apache.arrow.vector.BigIntVector
 import org.apache.arrow.vector.FieldVector
 import org.apache.arrow.vector.IntVector
 
+import org.apache.spark.sql.execution.serde._
 import org.apache.spark.sql.execution.vectorized.OffHeapColumnVector
 import org.apache.spark.sql.types._
 
@@ -40,6 +43,54 @@ object TestVector {
 
     // Project(add(vector, vector))
     val array_addresses = lib.projectOnTwoVectors(vectorAddress, anotherVectorAddress, 10)
+    read_arrow_arrays(array_addresses)
+
+    testQueryPlanSerialization(lib)
+  }
+
+  def testQueryPlanSerialization(lib: VectorLib): Unit = {
+    // Build proto objects.
+
+    // Add(bound(0), bound(1))
+    val addBuilder = ExprOuterClass.Add.newBuilder()
+    addBuilder.setLeft(
+      ExprOuterClass.Expr.newBuilder()
+        .setExprType(ExprOuterClass.Expr.ExprType.BOUND)
+        .setBound(ExprOuterClass.BoundReference.newBuilder().setIndex(0).build()))
+    addBuilder.setRight(
+      ExprOuterClass.Expr.newBuilder()
+        .setExprType(ExprOuterClass.Expr.ExprType.BOUND)
+        .setBound(ExprOuterClass.BoundReference.newBuilder().setIndex(1).build()))
+
+    val exprBuilder = ExprOuterClass.Expr.newBuilder()
+      .setExprType(ExprOuterClass.Expr.ExprType.ADD)
+      .setAdd(addBuilder)
+
+    val projectBuilder = OperatorOuterClass.Projection.newBuilder()
+    projectBuilder.addProjectList(0, exprBuilder)
+
+    val opBuilder = OperatorOuterClass.Operator.newBuilder()
+    opBuilder.setOpType(OperatorOuterClass.Operator.OperatorType.PROJECTION)
+    opBuilder.setProjection(projectBuilder)
+
+    val outputStream = new ByteArrayOutputStream()
+    opBuilder.build().writeTo(outputStream)
+    outputStream.close()
+
+    // serialized query plan
+    val bytes = outputStream.toByteArray
+
+    // input vectors
+    val schema = Seq(StructField("a", IntegerType))
+    val vector = OffHeapColumnVector.allocateColumns(10, schema.toArray)(0)
+    vector.putInt(0, 456)
+    val vectorAddress = vector.valuesNativeAddress()
+    val anotherVector = OffHeapColumnVector.allocateColumns(10, schema.toArray)(0)
+    anotherVector.putInt(0, 123)
+    val anotherVectorAddress = anotherVector.valuesNativeAddress()
+
+    println(s"Executing query plan: ${opBuilder.build().toString}")
+    val array_addresses = lib.executePlan(bytes, Array(vectorAddress, anotherVectorAddress), 10)
     read_arrow_arrays(array_addresses)
   }
 
