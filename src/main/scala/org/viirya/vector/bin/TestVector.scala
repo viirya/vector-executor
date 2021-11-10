@@ -2,6 +2,8 @@ package org.viirya.vector.bin
 
 import java.io.ByteArrayOutputStream
 
+import scala.collection.JavaConverters._
+
 import org.apache.arrow.ffi.FFI
 import org.apache.arrow.ffi.ArrowArray
 import org.apache.arrow.ffi.ArrowSchema
@@ -11,9 +13,13 @@ import org.apache.arrow.vector.BigIntVector
 import org.apache.arrow.vector.FieldVector
 import org.apache.arrow.vector.IntVector
 
+import org.apache.spark.sql.catalyst.expressions.{Add, Alias, Attribute, AttributeReference, BindReferences, BoundReference, Expression}
+import org.apache.spark.sql.execution.{LocalTableScanExec, ProjectExec, SparkPlan}
 import org.apache.spark.sql.execution.serde._
 import org.apache.spark.sql.execution.vectorized.OffHeapColumnVector
 import org.apache.spark.sql.types._
+import org.apache.spark.sql.execution.serde.ExprOuterClass.Expr
+import org.apache.spark.sql.execution.serde.OperatorOuterClass.Operator
 
 import org.viirya.vector.native.VectorLib
 
@@ -48,29 +54,53 @@ object TestVector {
     testQueryPlanSerialization(lib)
   }
 
+  def exprToProto(expr: Expression, inputs: Seq[Attribute]): Expr = {
+    expr match {
+      case Alias(child, name) =>
+        exprToProto(child, inputs)
+
+      case Add(left, right, failOnError) =>
+        val addBuilder = ExprOuterClass.Add.newBuilder()
+        addBuilder.setLeft(exprToProto(left, inputs))
+        addBuilder.setRight(exprToProto(right, inputs))
+
+        ExprOuterClass.Expr.newBuilder()
+          .setAdd(addBuilder).build()
+
+      case attr: AttributeReference =>
+        val boundRef= BindReferences.bindReference(attr, inputs, allowFailures = false)
+          .asInstanceOf[BoundReference]
+        ExprOuterClass.Expr.newBuilder()
+          .setBound(ExprOuterClass.BoundReference.newBuilder().setIndex(boundRef.ordinal).build())
+          .build()
+    }
+  }
+
+  def operatorToProto(op: SparkPlan): Option[Operator] = {
+    op match {
+      case ProjectExec(projectList, child) =>
+        val exprs = projectList.map(exprToProto(_, child.output))
+        val projectBuilder = OperatorOuterClass.Projection.newBuilder()
+        projectBuilder.addAllProjectList(exprs.toIterable.asJava)
+
+        val opBuilder = OperatorOuterClass.Operator.newBuilder()
+        Some(opBuilder.setProjection(projectBuilder).build())
+
+      case _ => None
+    }
+  }
+
   def testQueryPlanSerialization(lib: VectorLib): Unit = {
     // Build proto objects.
-
     // Add(bound(0), bound(1))
-    val addBuilder = ExprOuterClass.Add.newBuilder()
-    addBuilder.setLeft(
-      ExprOuterClass.Expr.newBuilder()
-        .setBound(ExprOuterClass.BoundReference.newBuilder().setIndex(0).build()))
-    addBuilder.setRight(
-      ExprOuterClass.Expr.newBuilder()
-        .setBound(ExprOuterClass.BoundReference.newBuilder().setIndex(1).build()))
-
-    val exprBuilder = ExprOuterClass.Expr.newBuilder()
-      .setAdd(addBuilder)
-
-    val projectBuilder = OperatorOuterClass.Projection.newBuilder()
-    projectBuilder.addProjectList(0, exprBuilder)
-
-    val opBuilder = OperatorOuterClass.Operator.newBuilder()
-    opBuilder.setProjection(projectBuilder)
+    val outputs = Seq(AttributeReference("a", IntegerType)(), AttributeReference("b", IntegerType)())
+    val projectExec = ProjectExec(
+      Seq(Alias(Add(outputs(0), outputs(1)), "add")()),
+      LocalTableScanExec(outputs, Seq.empty))
+    val op = operatorToProto(projectExec).get
 
     val outputStream = new ByteArrayOutputStream()
-    opBuilder.build().writeTo(outputStream)
+    op.writeTo(outputStream)
     outputStream.close()
 
     // serialized query plan
@@ -85,7 +115,7 @@ object TestVector {
     anotherVector.putInt(0, 123)
     val anotherVectorAddress = anotherVector.valuesNativeAddress()
 
-    println(s"Executing query plan: ${opBuilder.build().toString}")
+    println(s"Executing query plan: ${op.toString}")
     val array_addresses = lib.executePlan(bytes, Array(vectorAddress, anotherVectorAddress), 10)
     read_arrow_arrays(array_addresses)
   }
