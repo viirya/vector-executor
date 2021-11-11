@@ -141,6 +141,20 @@ pub extern "system" fn Java_org_viirya_vector_native_VectorLib_createPlan(
     _class: JClass,
     serialized_query: jbyteArray,
 ) -> jlong {
+    create_plan(env, _class, serialized_query)
+}
+
+#[no_mangle]
+/// Test JNI API. Accept serialized query plan and return the address of the native query plan.
+pub extern "system" fn Java_org_apache_spark_sql_execution_NativeLibrary_createPlan(
+    env: JNIEnv,
+    _class: JClass,
+    serialized_query: jbyteArray,
+) -> jlong {
+    create_plan(env, _class, serialized_query)
+}
+
+fn create_plan(env: JNIEnv, _class: JClass, serialized_query: jbyteArray) -> jlong {
     let mut i = 0;
     let bytes_elements = env
         .get_byte_array_elements(serialized_query, ReleaseMode::NoCopyBack)
@@ -169,6 +183,20 @@ pub extern "system" fn Java_org_viirya_vector_native_VectorLib_releasePlan(
     _class: JClass,
     plan: jlong,
 ) {
+    release_plan(plan)
+}
+
+#[no_mangle]
+/// Test JNI API. Drop the native query plan object.
+pub extern "system" fn Java_org_apache_spark_sql_execution_NativeLibrary_releasePlan(
+    _env: JNIEnv,
+    _class: JClass,
+    plan: jlong,
+) {
+    release_plan(plan)
+}
+
+fn release_plan(plan: jlong) {
     unsafe {
         Box::from_raw(plan as *mut Operator);
     }
@@ -178,6 +206,29 @@ pub extern "system" fn Java_org_viirya_vector_native_VectorLib_releasePlan(
 /// Test JNI API. Accept serialized query plan and the addresses of OffHeapColumnVectors of Spark,
 /// then execute the query. Return addresses of arrow vector.
 pub extern "system" fn Java_org_viirya_vector_native_VectorLib_executePlan(
+    env: JNIEnv,
+    _class: JClass,
+    plan: jlong,
+    addresses: jlongArray,
+    num_row: jint,
+) -> jlongArray {
+    execute_plan(env, _class, plan, addresses, num_row)
+}
+
+#[no_mangle]
+/// Test JNI API. Accept serialized query plan and the addresses of OffHeapColumnVectors of Spark,
+/// then execute the query. Return addresses of arrow vector.
+pub extern "system" fn Java_org_apache_spark_sql_execution_NativeLibrary_executePlan(
+    env: JNIEnv,
+    _class: JClass,
+    plan: jlong,
+    addresses: jlongArray,
+    num_row: jint,
+) -> jlongArray {
+    execute_plan(env, _class, plan, addresses, num_row)
+}
+
+fn execute_plan(
     env: JNIEnv,
     _class: JClass,
     plan: jlong,
@@ -207,30 +258,39 @@ pub extern "system" fn Java_org_viirya_vector_native_VectorLib_executePlan(
     // Replace with inputs
     match query {
         Operator::Projection(_, ref mut child) => {
-           match child.as_ref() {
-                Operator::Scan(arrays) if arrays.len() == 0 => *child = Box::new(Operator::Scan(inputs)),
-                _ => {},
-           };
+            match child.as_ref() {
+                Operator::Scan(arrays) if arrays.len() == 0 => {
+                    *child = Box::new(Operator::Scan(inputs))
+                }
+                _ => {}
+            };
         }
-        _ => {},
+        _ => {}
     };
 
     let results = query.execute().unwrap();
+    let long_array = env.new_long_array((results.len() * 2) as i32).unwrap();
 
-    match results.get(0).unwrap() {
-        ColumnarValue::Array(ArrayValues::ArrowArray(array_ref)) => {
-            let (array, schema) = unsafe {
-                ArrowArray::into_raw(ArrowArray::try_new(array_ref.data().clone()).unwrap())
-            };
+    i = 0;
+    while i < results.len() {
+        match results.get(i).unwrap() {
+            ColumnarValue::Array(ArrayValues::ArrowArray(array_ref)) => {
+                let (array, schema) = unsafe {
+                    ArrowArray::into_raw(ArrowArray::try_new(array_ref.data().clone()).unwrap())
+                };
 
-            let long_array = env.new_long_array(2).unwrap();
-            env.set_long_array_region(long_array, 0, &vec![array as i64, schema as i64])
+                env.set_long_array_region(
+                    long_array,
+                    (i * 2) as i32,
+                    &vec![array as i64, schema as i64],
+                )
                 .unwrap();
-
-            return long_array;
+            }
+            _ => {}
         }
-        _ => return env.new_long_array(0).unwrap(),
+        i += 1;
     }
+    long_array
 }
 
 #[cfg(test)]
