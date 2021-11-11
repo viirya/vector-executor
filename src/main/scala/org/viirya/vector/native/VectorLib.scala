@@ -11,9 +11,7 @@ class VectorLib {
 
   @native def projectOnTwoVectors(address1: Long, address2: Long, numRows: Int): Array[Long]
 
-  // Execute serialized (protobuf) plan on vectors.
-  @native def executePlan(plan: Array[Byte], addresses: Array[Long], numRows: Int): Array[Long]
-
-  @native def createPlan(plan: Array[Byte]): Int
-  @native def executeExistingPlan(planId: Int, addresses: Array[Long], numRows: Int): Array[Long]
+  @native def createPlan(plan: Array[Byte]): Long
+  @native def executePlan(plan: Long, addresses: Array[Long], numRows: Int): Array[Long]
+  @native def releasePlan(plan: Long): Unit
 }
