@@ -26,7 +26,7 @@ pub enum Expr {
     Literal(ColumnarValue),
 
     /// BoundReference
-    BoundReference(usize),
+    BoundReference(u32),
 
     /// Scala functions for expression
     ScalarFunction {

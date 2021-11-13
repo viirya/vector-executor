@@ -155,25 +155,39 @@ pub extern "system" fn Java_org_apache_spark_sql_execution_NativeLibrary_createP
 }
 
 fn create_plan(env: JNIEnv, _class: JClass, serialized_query: jbyteArray) -> jlong {
-    let mut i = 0;
-    let bytes_elements = env
-        .get_byte_array_elements(serialized_query, ReleaseMode::NoCopyBack)
-        .unwrap()
-        .as_ptr();
-    let mut encoded: Vec<u8> = vec![];
-    while i < env.get_array_length(serialized_query).unwrap() as usize {
-        let byte = unsafe { *(bytes_elements.add(i)) };
-        encoded.push(byte as u8);
-        i += 1;
-    }
+    let bytes = env.convert_byte_array(serialized_query).unwrap();
 
     // Deserialize query plan
-    let query = serde::deserialize_op(&encoded.as_slice())
+    let query = serde::deserialize_op(&bytes.as_slice())
         .unwrap()
         .to_native()
         .unwrap();
 
     Box::into_raw(Box::new(query)) as i64
+}
+
+#[no_mangle]
+/// Test JNI API. Accept serialized query plan and return the string of deserialized query plan.
+pub extern "system" fn Java_org_viirya_vector_native_VectorLib_getDeserializedPlan(
+    _env: JNIEnv,
+    _class: JClass,
+    serialized_query: jbyteArray,
+) -> jbyteArray {
+    serialized_query
+}
+
+#[no_mangle]
+/// Test JNI API. Accept serialized query plan and return the address of the native query plan.
+pub extern "system" fn Java_org_viirya_vector_native_VectorLib_getPlanString<'a>(
+    env: JNIEnv<'a>,
+    _class: JClass,
+    plan: jlong,
+) -> JString<'a> {
+    let query = unsafe { (plan as *mut Operator).as_mut().unwrap() };
+
+    let query_str = format!("native query: {:?}", query);
+
+    env.new_string(query_str).unwrap()
 }
 
 #[no_mangle]

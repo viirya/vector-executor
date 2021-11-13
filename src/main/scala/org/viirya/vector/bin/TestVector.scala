@@ -1,5 +1,6 @@
 package org.viirya.vector.bin
 
+import java.nio.charset.StandardCharsets
 import java.io.ByteArrayOutputStream
 
 import scala.collection.JavaConverters._
@@ -95,7 +96,8 @@ object TestVector {
     // Add(bound(0), bound(1))
     val outputs = Seq(AttributeReference("a", IntegerType)(), AttributeReference("b", IntegerType)())
     val projectExec = ProjectExec(
-      Seq(Alias(Add(outputs(0), outputs(1)), "add")()),
+      Seq(Alias(Add(outputs(0), outputs(1)), "add1")(),
+        Alias(Add(outputs(0), outputs(1)), "add2")()),
       LocalTableScanExec(outputs, Seq.empty))
     val op = operatorToProto(projectExec).get
 
@@ -105,6 +107,8 @@ object TestVector {
 
     // serialized query plan
     val bytes = outputStream.toByteArray
+
+    val deserialized = Operator.parseFrom(lib.getDeserializedPlan(bytes))
 
     // input vectors
     val schema = Seq(StructField("a", IntegerType))
@@ -116,7 +120,9 @@ object TestVector {
     val anotherVectorAddress = anotherVector.valuesNativeAddress()
 
     println(s"Executing query plan: ${op.toString}")
+    println(s"Deserialized query plan: ${deserialized.toString}")
     val plan = lib.createPlan(bytes)
+    println(s"Native query plan: ${lib.getPlanString(plan)}")
     for (i <- 0 to 10) {
       println(s"i = $i")
       val array_addresses = lib.executePlan(plan, Array(vectorAddress, anotherVectorAddress), 10)

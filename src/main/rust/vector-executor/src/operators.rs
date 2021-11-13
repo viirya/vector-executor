@@ -28,7 +28,7 @@ pub enum ExecutionError {
 }
 
 /// An vectorization operator
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub enum Operator {
     /// Scan
     Scan(Vec<ColumnarValue>),
@@ -75,8 +75,8 @@ fn execute_expr(expr: &Expr, args: &[ColumnarValue]) -> Result<ColumnarValue, Ex
         Expr::Literal(lit) => Ok(lit.clone()),
 
         Expr::BoundReference(column_index) => {
-            if column_index < &args.len() {
-                Ok(args[column_index.clone()].clone())
+            if column_index < &(args.len() as u32) {
+                Ok(args[column_index.clone() as usize].clone())
             } else {
                 Err(ExpressionError::GeneralError(format!(
                     "column index {} is out of range.",

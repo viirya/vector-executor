@@ -40,7 +40,11 @@ pub fn physical_add(args: &[ColumnarValue]) -> Result<ColumnarValue, ExpressionE
     };
     let mut idx = 0;
     let values = iter::repeat_with(|| {
-        let sum = args[0].get_int(idx).unwrap() + args[1].get_int(idx).unwrap();
+        let sum = args[0]
+            .get_int(idx)
+            .unwrap()
+            .checked_add(args[1].get_int(idx).unwrap())
+            .unwrap_or(i32::MAX);
         idx += 1;
         sum
     })

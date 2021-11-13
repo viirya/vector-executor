@@ -1,6 +1,7 @@
 //! Ser/De for expression/operators.
 
 use prost::Message;
+use std::fmt::Error;
 use std::io::Cursor;
 
 use crate::expression;
@@ -8,7 +9,6 @@ use crate::functions;
 use crate::operators::{ExecutionError, Operator};
 use crate::spark_expression;
 use crate::spark_operator;
-use std::fmt::Error;
 
 impl From<prost::DecodeError> for expression::ExpressionError {
     fn from(error: prost::DecodeError) -> expression::ExpressionError {
@@ -101,8 +101,8 @@ impl Serde<expression::ExpressionError, expression::Expr> for spark_expression::
     fn to_native(self: &Self) -> Result<expression::Expr, expression::ExpressionError> {
         match self.expr_struct.as_ref().unwrap() {
             spark_expression::expr::ExprStruct::Add(add) => {
-                let left = add.left.as_ref().unwrap().to_native().unwrap();
-                let right = add.right.as_ref().unwrap().to_native().unwrap();
+                let left = add.left.as_ref().unwrap().to_native()?;
+                let right = add.right.as_ref().unwrap().to_native()?;
 
                 Ok(functions::add(left.clone(), right.clone()))
             }
@@ -149,7 +149,7 @@ impl Serde<expression::ExpressionError, expression::Expr> for spark_expression::
                 }
             }
             spark_expression::expr::ExprStruct::Bound(bound) => {
-                Ok(expression::Expr::BoundReference(bound.index as usize))
+                Ok(expression::Expr::BoundReference(bound.index as u32))
             }
         }
     }
@@ -167,11 +167,13 @@ impl Serde<ExecutionError, Operator> for spark_operator::Operator {
     fn to_native(self: &Self) -> Result<Operator, ExecutionError> {
         match self.op_struct.as_ref().unwrap() {
             spark_operator::operator::OpStruct::Projection(project) => {
-                let project_list = project
-                    .project_list
-                    .iter()
-                    .map(|expr| expr.to_native().unwrap())
-                    .collect::<Vec<expression::Expr>>();
+                let mut project_list = vec![];
+                for serialized_expr in &project.project_list {
+                    match serialized_expr.to_native() {
+                        Ok(expr) => project_list.push(expr),
+                        Err(err) => return Err(From::from(err)),
+                    }
+                }
 
                 // We don't serialize leaf operator from Spark. Once there is empty child node for a serialized
                 // operator, it takes array batch from Spark.
