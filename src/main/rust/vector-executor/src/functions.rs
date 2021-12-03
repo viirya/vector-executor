@@ -98,12 +98,12 @@ pub fn physical_add(args: &[ColumnarValue]) -> Result<ColumnarValue, ExpressionE
                 let slice2 = int_col_vector(array2);
 
                 unsafe {
-                    if is_x86_feature_detected!("sse2") {
-                        add_vectors_sse2(slice1, slice2)
+                    if is_x86_feature_detected!("avx2") {
+                        add_vectors_avx2(slice1, slice2)
                     } else if is_x86_feature_detected!("sse4.1") {
                         add_vectors_sse41(slice1, slice2)
-                    } else if is_x86_feature_detected!("avx2") {
-                        add_vectors_avx2(slice1, slice2)
+                    } else if is_x86_feature_detected!("sse2") {
+                        add_vectors_sse2(slice1, slice2)
                     } else {
                         let mut idx = 0;
                         let result = iter::repeat_with(|| {
